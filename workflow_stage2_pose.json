@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "text": "full body, simple background",
+      "text": "a person, full body, simple background,simple flat color",
       "clip": [
         "3",
         1
@@ -36,7 +36,7 @@
   },
   "4": {
     "inputs": {
-      "seed": 0,
+      "seed": 97870809749094,
       "steps": 20,
       "cfg": 8,
       "sampler_name": "euler",
