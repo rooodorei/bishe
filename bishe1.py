@@ -124,9 +124,9 @@ def generate_full_story_page(child_features, story_action, story_scene):
 # 测试运行
 if __name__ == "__main__":
     # 模拟从大模型传过来的三个变量
-    test_features = "girl, red  hair, blue dress"
-    test_action = "jumping joyfully"
-    test_scene = "jumping on mushrooms"
+    test_features = "girl, blue hair, yellow dress"
+    test_action = "sitting on bed"
+    test_scene = "sitting on bed"
     
     # 确保你有对应的 JSON 文件后取消下面这行的注释
     generate_full_story_page(test_features, test_action, test_scene)

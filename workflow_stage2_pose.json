@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "text": "monochrome, simple lineart, rough sketch, stick figure style, full body outline, white background, black lines",
+      "text": "full body, simple background",
       "clip": [
         "3",
         1
@@ -14,7 +14,7 @@
   },
   "2": {
     "inputs": {
-      "text": "(cropped, close-up, portrait, zooming in, out of frame, cut off head, cut off feet, cut off hands:1.5),complex background, loose clothing, skirts",
+      "text": "(complex background, scenery, shadows:1.3), loose clothing, baggy clothes, skirts, dress, cloak, (cropped, out of frame:1.2), close up, multiple people, bad anatomy, missing limbs",
       "clip": [
         "3",
         1
@@ -27,7 +27,7 @@
   },
   "3": {
     "inputs": {
-      "ckpt_name": "revAnimated_v2Rebirth.safetensors"
+      "ckpt_name": "anything-v5.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -91,17 +91,16 @@
       "title": "VAE解码"
     }
   },
-  "8": {
+  "7": {
     "inputs": {
-      "filename_prefix": "ComfyUI",
       "images": [
         "6",
         0
       ]
     },
-    "class_type": "SaveImage",
+    "class_type": "PreviewImage",
     "_meta": {
-      "title": "保存图像"
+      "title": "预览图像"
     }
   }
 }
