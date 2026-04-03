@@ -10,7 +10,7 @@
   },
   "6": {
     "inputs": {
-      "text": "masterpiece, best quality, highly detailed, anatomically correct, perfect body proportions",
+      "text": "(perfect anatomy, clear limbs, well-drawn hands:1.3), children's picture book illustration, whimsical, heartwarming, innocent, charming， wholesome and safe atmosphere, gentle lighting, vibrant cheerful colors, clear composition, masterpiece, best quality",
       "clip": [
         "2",
         1
@@ -23,7 +23,7 @@
   },
   "7": {
     "inputs": {
-      "text": "bad anatomy, worst quality, low quality, deformed, mutated, extra limbs, missing limbs, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, asymmetric body, cross-eyed, ugly, gross proportions",
+      "text": "(bad anatomy, deformed, mutated hands, missing limbs, extra limbs, bad hands, floating limbs, disfigured:1.4), (scary, terrifying, creepy, horror, violent, aggressive, dark themes, unsettling:1.5), photorealistic, realism, realistic eyes, 3d render, heavy shading, dark lighting, text, watermark, signature",
       "clip": [
         "2",
         1
@@ -184,25 +184,26 @@
       "title": "VAE解码"
     }
   },
-  "20": {
+  "22": {
     "inputs": {
+      "ipadapter_file": "ip-adapter-plus_sd15.safetensors"
+    },
+    "class_type": "IPAdapterModelLoader",
+    "_meta": {
+      "title": "IPAdapter Model Loader"
+    }
+  },
+  "23": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
       "images": [
         "19",
         0
       ]
     },
-    "class_type": "PreviewImage",
+    "class_type": "SaveImage",
     "_meta": {
-      "title": "预览图像"
-    }
-  },
-  "22": {
-    "inputs": {
-      "ipadapter_file": "ip-adapter_sd15.safetensors"
-    },
-    "class_type": "IPAdapterModelLoader",
-    "_meta": {
-      "title": "IPAdapter Model Loader"
+      "title": "保存图像"
     }
   }
 }

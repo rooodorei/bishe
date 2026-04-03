@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "text": "a person jumping happily, full body, simple background",
+      "text": "monochrome, simple lineart, rough sketch, stick figure style, full body outline, white background, black lines",
       "clip": [
         "3",
         1
@@ -14,7 +14,7 @@
   },
   "2": {
     "inputs": {
-      "text": "multiple people, close up",
+      "text": "(cropped, close-up, portrait, zooming in, out of frame, cut off head, cut off feet, cut off hands:1.5),complex background, loose clothing, skirts",
       "clip": [
         "3",
         1
@@ -91,16 +91,17 @@
       "title": "VAE解码"
     }
   },
-  "7": {
+  "8": {
     "inputs": {
+      "filename_prefix": "ComfyUI",
       "images": [
         "6",
         0
       ]
     },
-    "class_type": "PreviewImage",
+    "class_type": "SaveImage",
     "_meta": {
-      "title": "预览图像"
+      "title": "保存图像"
     }
   }
 }
