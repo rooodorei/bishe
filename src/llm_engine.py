@@ -52,7 +52,7 @@ def generate_script_turn(child_features, context_history, user_choice, max_retri
         actor_dialogue = chat_with_agent(actor_sys, f"旁白：{narrator_text}")
         data['actor_dialogue'] = actor_dialogue
         
-        # 3. 呼叫评论家 (核心安全防线)
+        # 3. 呼叫评论家
         print("🛡️ 评论家正在逐字审核...")
         critic_user = f"旁白：{narrator_text}\n台词：{actor_dialogue}"
         critic_verdict = chat_with_agent(critic_sys, critic_user)

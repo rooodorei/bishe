@@ -37,6 +37,11 @@ async def init_story(req: InitRequest):
     print(f"🎨 正在绘制画面...")
     img_path = generate_full_story_page(req.child_features, turn_data['story_action'], turn_data['story_scene'])
     
+    # ++++ 加上这三行防崩溃判断 ++++
+    if not img_path:
+        raise HTTPException(status_code=500, detail="图片生成失败，请检查后台 ComfyUI 是否开启或文件路径是否正确")
+    # ++++++++++++++++++++++++++++++
+
     final_img_name = f"scene_{session_id}_0.png"
     os.rename(img_path, final_img_name)
     
@@ -66,10 +71,18 @@ async def next_turn(req: NextTurnRequest):
     print(f"🎨 正在绘制新画面...")
     img_path = generate_full_story_page(session_data["features"], turn_data['story_action'], turn_data['story_scene'])
     
+    # ++++ 加上这三行防崩溃判断 ++++
+    if not img_path:
+        raise HTTPException(status_code=500, detail="图片生成失败，请检查后台 ComfyUI 是否开启或文件路径是否正确")
+    # ++++++++++++++++++++++++++++++
+
     turn_index = len(session_data["memory_list"])
     final_img_name = f"scene_{req.session_id}_{turn_index}.png"
     os.rename(img_path, final_img_name)
-    
+
+    print(f"📖 最终剧本: {turn_data['narrator_text']}")
+    print(f"✅ 数据已发送给前端！")
+
     return {
         "image_url": f"/{final_img_name}",
         "narrator_text": turn_data['narrator_text'],
