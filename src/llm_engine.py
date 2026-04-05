@@ -24,9 +24,13 @@ def generate_script_turn(child_features, context_history, user_choice, max_retri
     带有 Self-Refine (自动重试) 机制
     """
     # ================= 智能体人设 =================
-    director_sys = """你是一个儿童绘本导演。请严格输出JSON格式：{"narrator_text": "中文旁白...", "story_scene": "英文场景...", "story_action": "英文动作...", "options": ["选项1", "选项2"]}。提取英文提示词时必须包含给定的主角特征。"""
-    
-    actor_sys = "你正在扮演儿童绘本的主角。根据旁白，用第一人称输出一句童趣的台词，20字以内。"
+    director_sys = """你是一个专业的儿童交互式绘本导演。请严格输出JSON格式：{"narrator_text": "中文旁白...", "story_scene": "英文场景...", "story_action": "英文动作...", "options": ["选项1", "选项2"]}。
+    【重要剧情要求】：
+    1. 旁白内容必须生动丰富，字数在 100 字左右。
+    2. 请多加入环境的细节描写、五官感受（如风的声音、花草的颜色、神秘的气味等）和情绪的铺垫，让故事更有画面感。
+    3. 提取给AI绘画的英文提示词（story_scene 和 story_action）时，必须包含给定的主角特征。
+    """
+    actor_sys = "你正在扮演儿童绘本的主角。根据旁白，用第一人称输出一句童趣的台词，50字以内。"
     
     critic_sys = "你是儿童内容安全专家。审核以下内容，安全回复PASS，不安全回复REJECT及原因。不可包含任何暴力、流血、恐怖、怪异、成人暗示或消极词汇。"
 

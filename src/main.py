@@ -1,19 +1,18 @@
-# main.py
 import uuid
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# 引入我们刚才拆分出去的核心引擎
+# 引入核心引擎
 from llm_engine import generate_script_turn
 from image_engine import generate_full_story_page
 
-app = FastAPI(title="儿童绘本生成系统 API")
+app = FastAPI(title="儿童绘本生成系统 API (异步加载版)")
 
-# 用于存储每个小朋友的剧情进度
 STORY_SESSIONS = {}
 
+# ================= 数据模型 =================
 class InitRequest(BaseModel):
     child_features: str
     theme: str
@@ -22,42 +21,38 @@ class NextTurnRequest(BaseModel):
     session_id: str
     user_choice: str
 
-@app.post("/api/init_story")
-async def init_story(req: InitRequest):
+class RenderRequest(BaseModel):
+    session_id: str
+
+# ================= 接口 1：生成初始化剧本 (只返回文字，极快) =================
+@app.post("/api/init_story_text")
+async def init_story_text(req: InitRequest):
     session_id = str(uuid.uuid4())
     opening_context = f"全局设定：故事主题是【{req.theme}】。主角准备好冒险了。"
     STORY_SESSIONS[session_id] = {"features": req.child_features, "memory_list": [opening_context]}
     
     print(f"\n--- 🚀 新游戏启动 [{session_id}] ---")
     turn_data = generate_script_turn(req.child_features, opening_context, "开始冒险")
-    if not turn_data: raise HTTPException(status_code=500, detail="剧本生成失败")
+    if not turn_data: 
+        raise HTTPException(status_code=500, detail="剧本生成失败")
         
     STORY_SESSIONS[session_id]["memory_list"].append(f"故事开局：{turn_data['narrator_text']}")
     
-    print(f"🎨 正在绘制画面...")
-    img_path = generate_full_story_page(req.child_features, turn_data['story_action'], turn_data['story_scene'])
+    # 将画图需要的提示词暂存在 Session 里，留给下一步用
+    STORY_SESSIONS[session_id]["current_action"] = turn_data['story_action']
+    STORY_SESSIONS[session_id]["current_scene"] = turn_data['story_scene']
     
-    # ++++ 加上这三行防崩溃判断 ++++
-    if not img_path:
-        raise HTTPException(status_code=500, detail="图片生成失败，请检查后台 ComfyUI 是否开启或文件路径是否正确")
-    # ++++++++++++++++++++++++++++++
-
-    final_img_name = f"scene_{session_id}_0.png"
-    os.rename(img_path, final_img_name)
-    
-    print(f"📖 最终剧本: {turn_data['narrator_text']}")
-    print(f"✅ 数据已发送给前端！")
-
+    print("✅ 文字生成完毕，已返回给前端！")
     return {
         "session_id": session_id,
-        "image_url": f"/{final_img_name}",
         "narrator_text": turn_data['narrator_text'],
         "actor_dialogue": turn_data['actor_dialogue'],
         "options": turn_data['options']
     }
 
-@app.post("/api/next_turn")
-async def next_turn(req: NextTurnRequest):
+# ================= 接口 2：生成下一幕剧本 (只返回文字，极快) =================
+@app.post("/api/next_turn_text")
+async def next_turn_text(req: NextTurnRequest):
     if req.session_id not in STORY_SESSIONS:
         raise HTTPException(status_code=404, detail="找不到会话")
         
@@ -67,31 +62,50 @@ async def next_turn(req: NextTurnRequest):
     print(f"\n--- ➡️ 推进故事 [{req.session_id}] | 选择: {req.user_choice} ---")
     turn_data = generate_script_turn(session_data["features"], context_history, req.user_choice)
     
+    if not turn_data: 
+        raise HTTPException(status_code=500, detail="剧本生成失败")
+
     new_memory = f"小朋友选择【{req.user_choice}】，剧情：{turn_data['narrator_text']}"
     session_data["memory_list"].append(new_memory)
-    # 这就是滑动窗口机制保留最近 4 轮记忆
-    if len(session_data["memory_list"]) > 4: session_data["memory_list"].pop(1)
+    if len(session_data["memory_list"]) > 4: 
+        session_data["memory_list"].pop(1)
         
-    print(f"🎨 正在绘制新画面...")
-    img_path = generate_full_story_page(session_data["features"], turn_data['story_action'], turn_data['story_scene'])
+    # 同样暂存画图提示词
+    session_data["current_action"] = turn_data['story_action']
+    session_data["current_scene"] = turn_data['story_scene']
     
-    # ++++ 加上这三行防崩溃判断 ++++
-    if not img_path:
-        raise HTTPException(status_code=500, detail="图片生成失败，请检查后台 ComfyUI 是否开启或文件路径是否正确")
-    # ++++++++++++++++++++++++++++++
-
-    turn_index = len(session_data["memory_list"])
-    final_img_name = f"scene_{req.session_id}_{turn_index}.png"
-    os.rename(img_path, final_img_name)
-
-
-
+    print("✅ 文字生成完毕，已返回给前端！")
     return {
-        "image_url": f"/{final_img_name}",
         "narrator_text": turn_data['narrator_text'],
         "actor_dialogue": turn_data['actor_dialogue'],
         "options": turn_data['options']
     }
 
-# 挂载当前目录供前端访问生成的图片
+# ================= 接口 3：专属画图接口 (耗时较长) =================
+@app.post("/api/render_image")
+async def render_image(req: RenderRequest):
+    if req.session_id not in STORY_SESSIONS:
+        raise HTTPException(status_code=404, detail="找不到会话")
+        
+    session_data = STORY_SESSIONS[req.session_id]
+    print(f"🎨 正在为 [{req.session_id}] 绘制画面...")
+    
+    img_path = generate_full_story_page(
+        session_data["features"], 
+        session_data["current_action"], 
+        session_data["current_scene"]
+    )
+    
+    if not img_path:
+        raise HTTPException(status_code=500, detail="图片生成失败")
+        
+    turn_index = len(session_data["memory_list"])
+    final_img_name = f"scene_{req.session_id}_{turn_index}.png"
+    if os.path.exists(final_img_name):
+        os.remove(final_img_name)
+    os.rename(img_path, final_img_name)
+    
+    print("✅ 画面绘制完毕，已发送图片URL！")
+    return {"image_url": f"/{final_img_name}"}
+
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

@@ -1,7 +1,7 @@
 {
   "2": {
     "inputs": {
-      "ckpt_name": "revAnimated_v2Rebirth.safetensors"
+      "ckpt_name": "anything-v5.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -10,7 +10,7 @@
   },
   "6": {
     "inputs": {
-      "text": "masterpiece, best quality, anatomically correct, perfect body proportions",
+      "text": "masterpiece,a person, full body",
       "clip": [
         "2",
         1
