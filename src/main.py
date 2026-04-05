@@ -45,6 +45,9 @@ async def init_story(req: InitRequest):
     final_img_name = f"scene_{session_id}_0.png"
     os.rename(img_path, final_img_name)
     
+    print(f"📖 最终剧本: {turn_data['narrator_text']}")
+    print(f"✅ 数据已发送给前端！")
+
     return {
         "session_id": session_id,
         "image_url": f"/{final_img_name}",
@@ -66,6 +69,7 @@ async def next_turn(req: NextTurnRequest):
     
     new_memory = f"小朋友选择【{req.user_choice}】，剧情：{turn_data['narrator_text']}"
     session_data["memory_list"].append(new_memory)
+    # 这就是滑动窗口机制保留最近 4 轮记忆
     if len(session_data["memory_list"]) > 4: session_data["memory_list"].pop(1)
         
     print(f"🎨 正在绘制新画面...")
@@ -80,8 +84,7 @@ async def next_turn(req: NextTurnRequest):
     final_img_name = f"scene_{req.session_id}_{turn_index}.png"
     os.rename(img_path, final_img_name)
 
-    print(f"📖 最终剧本: {turn_data['narrator_text']}")
-    print(f"✅ 数据已发送给前端！")
+
 
     return {
         "image_url": f"/{final_img_name}",
@@ -91,4 +94,4 @@ async def next_turn(req: NextTurnRequest):
     }
 
 # 挂载当前目录供前端访问生成的图片
-app.mount("/", StaticFiles(directory=".", html=False), name="static")
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
