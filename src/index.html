@@ -27,123 +27,53 @@
             border: 4px solid #ffb6c1;
         }
 
-        h1 {
-            color: #ff69b4;
-        }
-
-        .input-group {
-            margin: 20px 0;
-            text-align: left;
-        }
-
-        label {
-            font-size: 18px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        input,
-        select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            border: 2px solid #87ceeb;
-            border-radius: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
+        h1 { color: #ff69b4; }
+        .input-group { margin: 20px 0; text-align: left; }
+        label { font-size: 18px; font-weight: bold; color: #555; }
+        input, select {
+            width: 100%; padding: 12px; margin-top: 8px; border: 2px solid #87ceeb;
+            border-radius: 10px; font-size: 16px; box-sizing: border-box;
         }
 
         button {
-            background-color: #87ceeb;
-            color: white;
-            border: none;
-            border-radius: 15px;
-            padding: 15px 30px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin: 10px 5px;
-            width: 100%;
+            background-color: #87ceeb; color: white; border: none; border-radius: 15px;
+            padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s; margin: 10px 5px; width: 100%;
         }
 
-        button:hover {
-            transform: scale(1.05);
-            background-color: #00bfff;
-        }
-
-        button:disabled {
-            background-color: #ccc !important;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .option-btn {
-            background-color: #ffb6c1;
-        }
+        button:hover { transform: scale(1.05); background-color: #00bfff; }
+        button:disabled { background-color: #ccc !important; cursor: not-allowed; transform: none; }
+        .option-btn { background-color: #ffb6c1; }
 
         /* 故事展示区 */
         .image-container {
-            position: relative;
-            width: 100%;
-            min-height: 300px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 4px solid #eee;
-            overflow: hidden;
-            background: #fafafa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative; width: 100%; min-height: 300px; border-radius: 15px;
+            margin-bottom: 20px; border: 4px solid #eee; overflow: hidden;
+            background: #fafafa; display: flex; align-items: center; justify-content: center;
         }
-
-        #story-image {
-            width: 100%;
-            border-radius: 10px;
-        }
-
-        #drawing-animation {
-            text-align: center;
-            color: #87ceeb;
-            font-weight: bold;
-        }
-
-        .spinner {
-            font-size: 40px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        @keyframes spin {
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+        #story-image { width: 100%; display: none; border-radius: 10px; }
+        #drawing-animation { text-align: center; color: #87ceeb; font-weight: bold; }
+        
+        .spinner { font-size: 40px; animation: spin 2s linear infinite; display: inline-block; margin-bottom: 10px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .story-text {
-            font-size: 20px;
-            line-height: 1.6;
+            font-size: 20px; line-height: 1.6; text-align: left; background: #fffacd;
+            padding: 20px; border-radius: 15px; margin-bottom: 20px;
+        }
+        .actor-dialogue { color: #ff4500; font-weight: bold; margin-top: 10px; }
+        #text-loading { margin: 40px 0; }
+        .hidden { display: none !important; }
+
+        /* 📖 新增：完整绘本展示的专属样式 */
+        .book-page {
+            background: white; border: 2px dashed #ffb6c1; border-radius: 15px;
+            padding: 20px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             text-align: left;
-            background: #fffacd;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
         }
-
-        .actor-dialogue {
-            color: #ff4500;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        #text-loading {
-            margin: 40px 0;
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        .book-page img { width: 100%; border-radius: 10px; margin-bottom: 15px; }
+        .page-num { font-weight: bold; color: #87ceeb; margin-bottom: 10px; font-size: 18px; border-bottom: 2px dashed #eee; padding-bottom: 5px; }
+        .page-choice { color: #aaa; font-size: 14px; margin-bottom: 10px; font-style: italic; }
     </style>
 </head>
 
@@ -159,6 +89,7 @@
                 <select id="theme">
                     <option value="魔法森林探险">🌲 魔法森林探险</option>
                     <option value="太空宇宙漫游">🚀 太空宇宙漫游</option>
+                    <option value="深海寻宝奇遇">🌊 深海寻宝奇遇</option>
                 </select>
             </div>
             <div class="input-group">
@@ -170,7 +101,7 @@
 
         <div id="text-loading" class="hidden">
             <div class="spinner">🧠</div>
-            <h3 style="color: #ff69b4;">大模型正在构思剧情，马上就好...</h3>
+            <h3 id="loading-text" style="color: #ff69b4;">大模型正在构思剧情，马上就好...</h3>
         </div>
 
         <div id="story-screen" class="hidden">
@@ -179,7 +110,7 @@
                     <div class="spinner">🎨</div>
                     <div>AI 画家正在努力作画中...<br><span style="font-size:14px;color:#999">（你可以先阅读下方的故事）</span></div>
                 </div>
-                <img id="story-image" src="" alt="绘本画面">
+                <img id="story-image" src="" alt="绘本画面" class="hidden">
             </div>
 
             <div class="story-text">
@@ -191,13 +122,27 @@
 
             <div id="custom-input-container" style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
                 <span style="font-size: 20px;">💡</span>
-                <input type="text" id="custom-choice" placeholder="或者...自己输入你想做的事情！"
-                    style="margin-top: 0; border-color: #ffb6c1;">
-                <button id="custom-submit-btn" onclick="submitCustomChoice()"
-                    style="width: auto; padding: 12px 20px; margin: 0; background-color: #ff69b4;">发送</button>
+                <input type="text" id="custom-choice" placeholder="或者...自己输入你想做的事情！" style="margin-top: 0; border-color: #ffb6c1;">
+                <button id="custom-submit-btn" onclick="submitCustomChoice()" style="width: auto; padding: 12px 20px; margin: 0; background-color: #ff69b4;">发送</button>
             </div>
 
+            <div style="margin-top: 40px; border-top: 2px dashed #eee; padding-top: 20px;">
+                <button id="finish-btn" onclick="finishStory()" style="background-color: #ffd700; color: #d2691e; border: 2px solid #daa520;">
+                    📖 结束冒险，装订我的绘本！
+                </button>
+            </div>
         </div>
+
+        <div id="storybook-screen" class="hidden">
+            <h2 id="book-title" style="color: #ff69b4; margin-bottom: 5px;"></h2>
+            <p id="book-meta" style="color: #777; font-size: 14px; margin-bottom: 30px;"></p>
+            
+            <div id="book-pages-container">
+                </div>
+
+            <button onclick="location.reload()" style="margin-top: 30px; background-color: #32cd32;">🔄 再玩一次全新的冒险</button>
+        </div>
+
     </div>
 
     <script>
@@ -207,15 +152,15 @@
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('text-loading').classList.add('hidden');
             document.getElementById('story-screen').classList.add('hidden');
+            document.getElementById('storybook-screen').classList.add('hidden'); // 加入新界面的隐藏逻辑
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        // 核心流程：先请求文字，再请求图片
         async function executeTurn(endpoint, payload) {
             showScreen('text-loading');
+            document.getElementById('loading-text').innerText = "大模型正在构思剧情，马上就好...";
 
             try {
-                // 步骤 1：获取文字剧情
                 const textRes = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -226,16 +171,16 @@
                 if (!textRes.ok) throw new Error(textData.detail);
                 if (textData.session_id) currentSessionId = textData.session_id;
 
-                // 步骤 2：立马展示文字，隐藏图片，显示“作画中”动画
                 document.getElementById('narrator-text').innerText = textData.narrator_text;
                 document.getElementById('actor-dialogue').innerText = "👦 主角说：\"" + textData.actor_dialogue + "\"";
 
                 document.getElementById('story-image').classList.add('hidden');
                 document.getElementById('drawing-animation').classList.remove('hidden');
 
-                // 👇 锁定自定义输入框和发送按钮
+                // 禁用全部交互元素，防误触
                 document.getElementById('custom-choice').disabled = true;
                 document.getElementById('custom-submit-btn').disabled = true;
+                document.getElementById('finish-btn').disabled = true; // 锁定结束按钮
 
                 const optionsContainer = document.getElementById('options-container');
                 optionsContainer.innerHTML = "";
@@ -243,14 +188,13 @@
                     const btn = document.createElement('button');
                     btn.className = "option-btn";
                     btn.innerText = "👉 " + opt;
-                    btn.disabled = true; // 图片没画完前不准点，防止逻辑混乱
+                    btn.disabled = true; 
                     btn.onclick = () => executeTurn('/api/next_turn_text', { session_id: currentSessionId, user_choice: opt });
                     optionsContainer.appendChild(btn);
                 });
 
                 showScreen('story-screen');
 
-                // 步骤 3：后台静默请求生成图片
                 const imgRes = await fetch('/api/render_image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -259,7 +203,6 @@
                 const imgData = await imgRes.json();
                 if (!imgRes.ok) throw new Error(imgData.detail);
 
-                // 步骤 4：图片画好了，替换画面，激活所有按钮！
                 const img = document.getElementById('story-image');
                 img.src = imgData.image_url + "?t=" + new Date().getTime();
                 img.onload = () => {
@@ -267,12 +210,10 @@
                     img.classList.remove('hidden');
                     img.style.display = 'block';
                     
-                    // 解锁预设选项按钮
                     document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
-                    
-                    // 👇 解锁自定义输入框和发送按钮
                     document.getElementById('custom-choice').disabled = false;
                     document.getElementById('custom-submit-btn').disabled = false;
+                    document.getElementById('finish-btn').disabled = false; // 解锁结束按钮
                 };
 
             } catch (error) {
@@ -281,20 +222,11 @@
             }
         }
 
-        // 💡 新增：处理小朋友自定义输入的行为
         function submitCustomChoice() {
             const customInput = document.getElementById('custom-choice');
             const customText = customInput.value.trim();
-            
-            if (!customText) {
-                alert("请输入你想做的事情哦！");
-                return;
-            }
-            
-            // 调用之前的核心流程，把手写的文本传进去
+            if (!customText) { alert("请输入你想做的事情哦！"); return; }
             executeTurn('/api/next_turn_text', { session_id: currentSessionId, user_choice: customText });
-            
-            // 清空输入框，准备下一次输入
             customInput.value = '';
         }
 
@@ -302,6 +234,56 @@
             const theme = document.getElementById('theme').value;
             const features = document.getElementById('features').value;
             executeTurn('/api/init_story_text', { child_features: features, theme: theme });
+        }
+
+        // 📖 新增：生成并展示完整绘本的逻辑
+        async function finishStory() {
+            showScreen('text-loading');
+            document.getElementById('loading-text').innerText = "正在为你装订专属绘本，马上就好...";
+
+            try {
+                // 调用你写的后端查库接口
+                const res = await fetch(`/api/get_storybook/${currentSessionId}`);
+                if (!res.ok) throw new Error("获取绘本档案失败");
+                const bookData = await res.json();
+
+                // 渲染标题和设定
+                document.getElementById('book-title').innerText = `《${bookData.theme}》`;
+                document.getElementById('book-meta').innerText = `主角设定：${bookData.features}\n创作时间：${bookData.create_time}`;
+
+                const container = document.getElementById('book-pages-container');
+                container.innerHTML = "";
+
+                // 循环渲染每一页
+                bookData.pages.forEach((page, index) => {
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'book-page';
+                    
+                    let html = `<div class="page-num">第 ${index + 1} 页</div>`;
+                    if (index > 0) {
+                        html += `<div class="page-choice">💭 因为你选择了：${page.choice}</div>`;
+                    }
+                    
+                    // 如果这页有图片就展示
+                    if (page.image && page.image !== "") {
+                        html += `<img src="${page.image}?t=${new Date().getTime()}" alt="插图">`;
+                    }
+                    
+                    html += `<div style="font-size: 18px; line-height: 1.6;">${page.narrator}</div>`;
+                    if (page.dialogue) {
+                        html += `<div class="actor-dialogue" style="font-size: 16px;">👦 主角说："${page.dialogue}"</div>`;
+                    }
+                    
+                    pageDiv.innerHTML = html;
+                    container.appendChild(pageDiv);
+                });
+
+                showScreen('storybook-screen');
+
+            } catch (error) {
+                alert(error.message);
+                showScreen('story-screen');
+            }
         }
     </script>
 
