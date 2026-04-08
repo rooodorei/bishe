@@ -127,13 +127,9 @@ async def render_image(req: RenderRequest):
     os.rename(img_path, final_img_name)
     
     # 👇 新增：把画好的图片路径更新到数据库的对应页里
-    turn_index = len(session_data["memory_list"]) - 1
-    update_page_image(req.session_id, turn_index, f"/{final_img_name}")
+    update_page_image(req.session_id, f"/{final_img_name}")
     print("✅ 画面绘制完毕，已发送图片URL！")
     return {"image_url": f"/{final_img_name}"}
-
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
-
 
 # ================= 接口 4：获取完整绘本档案 (查库) =================
 @app.get("/api/get_storybook/{session_id}")
@@ -142,3 +138,9 @@ async def fetch_storybook(session_id: str):
     if not book_data:
         raise HTTPException(status_code=404, detail="找不到这本绘本")
     return book_data
+
+
+
+
+
+app.mount("/", StaticFiles(directory=".", html=True), name="static")

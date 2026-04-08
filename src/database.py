@@ -56,15 +56,31 @@ def add_page_text(session_id, turn_index, user_choice, narrator_text, actor_dial
     conn.commit()
     conn.close()
 
-def update_page_image(session_id, turn_index, image_url):
-    """当图片画好后，更新这一页的图片链接"""
+#def update_page_image(session_id, turn_index, image_url):
+#    """当图片画好后，更新这一页的图片链接"""
+#    conn = sqlite3.connect(DB_FILE)
+#    cursor = conn.cursor()
+#    cursor.execute('''
+#        UPDATE pages SET image_url = ? WHERE session_id = ? AND turn_index = ?
+#    ''', (image_url, session_id, turn_index))
+#    conn.commit()
+#    conn.close() 
+def update_page_image(session_id, image_url):
+    """当图片画好后，直接更新这本绘本最新一页的图片（无视页码，绝对不会错位）"""
+    import sqlite3 # 确保导入了
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    
+    # SQL 找到这本绘本 ID 最大（也就是刚刚最新插入）的那一页，把图片塞进去
     cursor.execute('''
-        UPDATE pages SET image_url = ? WHERE session_id = ? AND turn_index = ?
-    ''', (image_url, session_id, turn_index))
+        UPDATE pages SET image_url = ? 
+        WHERE id = (SELECT MAX(id) FROM pages WHERE session_id = ?)
+    ''', (image_url, session_id))
+    
     conn.commit()
     conn.close()
+
+
 
 def get_full_storybook(session_id):
     """读取整本绘本的完整内容（可以用来做'我的书架'功能）"""
