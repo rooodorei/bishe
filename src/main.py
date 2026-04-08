@@ -140,5 +140,5 @@ app.mount("/", StaticFiles(directory=".", html=True), name="static")
 async def fetch_storybook(session_id: str):
     book_data = get_full_storybook(session_id)
     if not book_data:
-        raise HTTPException(status_code=404, detail="找不到这本绘本呀")
+        raise HTTPException(status_code=404, detail="找不到这本绘本")
     return book_data
