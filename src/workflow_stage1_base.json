@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "ckpt_name": "anything-v5.safetensors"
+      "ckpt_name": "1.5模型\\万能 dreamshaper_8.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -41,6 +41,7 @@
   "3": {
     "inputs": {
       "text": "full body , standing straight , looking at viewer , white background , simple design, picture book style, clear features",
+      "嵌入提示词": null,
       "clip": [
         "1",
         1
@@ -54,6 +55,7 @@
   "4": {
     "inputs": {
       "text": "complex background, multiple people, worst quality",
+      "嵌入提示词": null,
       "clip": [
         "1",
         1

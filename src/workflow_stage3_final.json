@@ -1,7 +1,7 @@
 {
   "2": {
     "inputs": {
-      "ckpt_name": "anything-v5.safetensors"
+      "ckpt_name": "1.5模型\\万能 dreamshaper_8.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
@@ -11,6 +11,7 @@
   "6": {
     "inputs": {
       "text": "masterpiece,a person, full body",
+      "嵌入提示词": null,
       "clip": [
         "2",
         1
@@ -24,6 +25,7 @@
   "7": {
     "inputs": {
       "text": "floating limbs, bad anatomy, worst quality, NSFW, nude, naked, violence, blood, scary, creepy, dark, sexy, revealing clothes,bad hands",
+      "嵌入提示词": null,
       "clip": [
         "2",
         1
@@ -79,7 +81,7 @@
     },
     "class_type": "IPAdapterAdvanced",
     "_meta": {
-      "title": "IPAdapter Advanced"
+      "title": "应用IPAdapter（高级）"
     }
   },
   "14": {
@@ -93,7 +95,7 @@
   },
   "15": {
     "inputs": {
-      "control_net_name": "control_v11p_sd15_openpose.pth"
+      "control_net_name": "control_v11p_sd15_openpose_fp16.safetensors"
     },
     "class_type": "ControlNetLoader",
     "_meta": {
@@ -206,7 +208,7 @@
     },
     "class_type": "IPAdapterModelLoader",
     "_meta": {
-      "title": "IPAdapter Model Loader"
+      "title": "IPAdapter模型加载器"
     }
   }
 }
