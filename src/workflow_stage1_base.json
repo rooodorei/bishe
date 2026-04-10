@@ -40,7 +40,7 @@
   },
   "3": {
     "inputs": {
-      "text": "full body , standing straight , looking at viewer , white background , simple design, picture book style, clear features",
+      "text": "Pixar-style，full body , standing straight , looking at viewer , white background ",
       "嵌入提示词": null,
       "clip": [
         "1",

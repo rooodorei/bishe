@@ -112,6 +112,7 @@ async def render_image(req: RenderRequest):
     print(f"🎨 正在为 [{req.session_id}] 绘制画面...")
     
     img_path = generate_full_story_page(
+        req.session_id,
         session_data["features"], 
         session_data["current_action"], 
         session_data["current_scene"]
