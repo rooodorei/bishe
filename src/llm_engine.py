@@ -6,7 +6,7 @@ from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
 
 def chat_with_agent(system_prompt, user_message, json_mode=False):
-    """底层通信函数，集成了输入输出监控"""
+    """输入输出监控"""
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_message}
