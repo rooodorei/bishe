@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "ckpt_name": "1.5模型\\万能 dreamshaper_8.safetensors"
+      "ckpt_name": "disneyPixarCartoon_v10.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
