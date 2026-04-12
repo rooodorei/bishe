@@ -189,13 +189,13 @@
                     btn.className = "option-btn";
                     btn.innerText = "👉 " + opt;
                     btn.disabled = true; 
-                    btn.onclick = () => executeTurn('/api/next_turn_text', { session_id: currentSessionId, user_choice: opt });
+                    btn.onclick = () => executeTurn('http://127.0.0.1:8088/api/next_turn_text', { session_id: currentSessionId, user_choice: opt });
                     optionsContainer.appendChild(btn);
                 });
 
                 showScreen('story-screen');
 
-                const imgRes = await fetch('/api/render_image', {
+                const imgRes = await fetch('http://127.0.0.1:8088/api/render_image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: currentSessionId })
@@ -226,14 +226,14 @@
             const customInput = document.getElementById('custom-choice');
             const customText = customInput.value.trim();
             if (!customText) { alert("请输入你想做的事情哦！"); return; }
-            executeTurn('/api/next_turn_text', { session_id: currentSessionId, user_choice: customText });
+            executeTurn('http://127.0.0.1:8088/api/next_turn_text', { session_id: currentSessionId, user_choice: customText });
             customInput.value = '';
         }
 
         function startGame() {
             const theme = document.getElementById('theme').value;
             const features = document.getElementById('features').value;
-            executeTurn('/api/init_story_text', { child_features: features, theme: theme });
+            executeTurn('http://127.0.0.1:8088/api/init_story_text', { child_features: features, theme: theme });
         }
 
         // 📖 新增：生成并展示完整绘本的逻辑
@@ -243,7 +243,7 @@
 
             try {
                 // 调用你写的后端查库接口
-                const res = await fetch(`/api/get_storybook/${currentSessionId}`);
+                const res = await fetch(`http://127.0.0.1:8088/api/get_storybook/${currentSessionId}`);
                 if (!res.ok) throw new Error("获取绘本档案失败");
                 const bookData = await res.json();
 

@@ -12,7 +12,7 @@ from image_engine import generate_full_story_page
 from llm_engine import generate_script_turn
 from image_engine import generate_full_story_page
 # 👇 新增：引入我们的数据库模块
-from database import create_storybook, add_page_text, update_page_image, get_full_storybook
+# from database import create_storybook, add_page_text, update_page_image, get_full_storybook
 
 
 app = FastAPI(title="儿童绘本生成系统 API (异步加载版)")
@@ -49,8 +49,8 @@ async def init_story_text(req: InitRequest):
     STORY_SESSIONS[session_id]["current_action"] = turn_data['story_action']
     STORY_SESSIONS[session_id]["current_scene"] = turn_data['story_scene']
     # 👇 新增存入数据库
-    create_storybook(session_id, req.theme, req.child_features)
-    add_page_text(session_id, 0, "开始冒险", turn_data['narrator_text'], turn_data['actor_dialogue'])
+    # create_storybook(session_id, req.theme, req.child_features)
+    # add_page_text(session_id, 0, "开始冒险", turn_data['narrator_text'], turn_data['actor_dialogue'])
 
 
     print("✅ 文字生成完毕，已返回给前端！")
@@ -92,7 +92,7 @@ async def next_turn_text(req: NextTurnRequest):
     # 计算这是第几页 (因为 memory_list 包含全局设定，所以减去1)
     turn_index = len(session_data["memory_list"]) - 1
     # 👇 新增：把这一页的文字存入数据库
-    add_page_text(req.session_id, turn_index, req.user_choice, turn_data['narrator_text'], turn_data['actor_dialogue'])
+    # add_page_text(req.session_id, turn_index, req.user_choice, turn_data['narrator_text'], turn_data['actor_dialogue'])
     print("✅ 文字生成完毕，已返回给前端！")
     return {
         "narrator_text": turn_data['narrator_text'],
@@ -128,17 +128,19 @@ async def render_image(req: RenderRequest):
     os.rename(img_path, final_img_name)
     
     # 👇 新增：把画好的图片路径更新到数据库的对应页里
-    update_page_image(req.session_id, f"/{final_img_name}")
+    # update_page_image(req.session_id, f"/{final_img_name}")
     print("✅ 画面绘制完毕，已发送图片URL！")
     return {"image_url": f"/{final_img_name}"}
 
 # ================= 接口 4：获取完整绘本档案 (查库) =================
+"""
 @app.get("/api/get_storybook/{session_id}")
 async def fetch_storybook(session_id: str):
     book_data = get_full_storybook(session_id)
     if not book_data:
         raise HTTPException(status_code=404, detail="找不到这本绘本")
     return book_data
+    """
 
 
 
