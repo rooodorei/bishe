@@ -99,7 +99,7 @@
       "detect_body": "enable",
       "detect_face": "enable",
       "resolution": 512,
-      "scale_stick_for_xinsr_cn": "disable",
+      "scale_stick_for_xinsr_cn": "enable",
       "image": [
         "6",
         0
