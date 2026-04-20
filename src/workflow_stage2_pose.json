@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "text": "a person, full body, simple background,simple flat color",
+      "text": "a person, full body, standing,watch the viewer",
       "嵌入提示词": null,
       "clip": [
         "3",
@@ -38,7 +38,7 @@
   },
   "4": {
     "inputs": {
-      "seed": 97870809749094,
+      "seed": 788667460822987,
       "steps": 20,
       "cfg": 8,
       "sampler_name": "euler",
@@ -110,16 +110,17 @@
       "title": "Openpose姿态预处理器"
     }
   },
-  "9": {
+  "10": {
     "inputs": {
+      "filename_prefix": "ComfyUI",
       "images": [
         "8",
         0
       ]
     },
-    "class_type": "PreviewImage",
+    "class_type": "SaveImage",
     "_meta": {
-      "title": "预览图像"
+      "title": "保存图像"
     }
   }
 }

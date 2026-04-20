@@ -40,9 +40,9 @@ def generate_script_turn(child_features, context_history, user_choice, max_retri
     请根据小朋友的选择构思下一幕，并严格输出JSON格式：
     {{
         "narrator_text": "150字左右的生动旁白...",
-        "story_scene": "场景提示词",
-        "story_action": "动作提示词...",
-        "options": ["选项1", "选项2"]
+        "story_scene": "英文场景提示词",
+        "story_action": "英文动作提示词...",
+        "options": ["中文下一步选项1", "中文下一步选项2"]
     }}
     注意：如果收到评论家的打回意见，请务必针对性修改，避开违规内容。"""
 
