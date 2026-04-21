@@ -144,156 +144,76 @@
             border: 2px dashed #F2C94C;
         }
 
-        /* ================= 硬核：命运之树 (分支时间线 CSS) ================= */
+/* ================= 硬核：命运之树 (分支时间线 CSS) ================= */
         .timeline-scroll-area {
-            overflow-x: auto;
-            padding: 20px 20px 60px 20px;
-            background: #fdfdfd;
-            border-radius: 20px;
-            border: 4px dashed var(--tree-line);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: center;
-            min-height: 300px;
+            overflow-x: auto; padding: 20px 20px 60px 20px; background: #fdfdfd;
+            border-radius: 20px; border: 4px dashed var(--tree-line); margin-bottom: 20px;
+            display: flex; justify-content: center; min-height: 300px;
         }
 
-        /* 树的层级与容器 */
-        .tree-children {
-            display: flex;
-            justify-content: center;
-            padding-top: 30px;
-            position: relative;
-        }
-
-        /* 树干向下延伸的竖线 */
+        /* 加大树的层级间距，给选项文字留出空间 */
+        .tree-children { display: flex; justify-content: center; padding-top: 50px; position: relative; }
         .tree-children::before {
-            content: '';
+            content: ''; position: absolute; top: 0; left: 50%; margin-left: -2px;
+            border-left: 4px solid var(--tree-line); width: 0; height: 50px;
+        }
+        
+        /* 节点容器层 */
+        .tree-level { display: flex; flex-direction: column; align-items: center; position: relative; padding: 50px 15px 0 15px; }
+        .tree-level::before, .tree-level::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 4px solid var(--tree-line); width: 50%; height: 50px;
+        }
+        .tree-level::after { right: auto; left: 50%; border-left: 4px solid var(--tree-line); }
+        .tree-level:first-child::before, .tree-level:last-child::after { border: 0 none; }
+        .tree-level:last-child::before { border-right: 4px solid var(--tree-line); border-radius: 0 10px 0 0; }
+        .tree-level:first-child::after { border-radius: 10px 0 0 0; }
+        .tree-level:only-child::after, .tree-level:only-child::before { display: none; }
+        .tree-level:only-child { padding-top: 0; }
+        .tree-level.is-root { padding-top: 0; } 
+
+        /* ⭐ 新增：悬浮在分支线上的“选择胶囊” */
+        .choice-badge {
             position: absolute;
-            top: 0;
-            left: 50%;
-            margin-left: -2px;
-            border-left: 4px solid var(--tree-line);
-            width: 0;
-            height: 30px;
+            top: 20px; /* 精准定位到连线的正中间 */
+            background: #fff;
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 5;
+            white-space: nowrap;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 4px 10px rgba(46, 196, 182, 0.2);
         }
-
-        /* 单个节点容器 */
-        .tree-level {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            padding: 30px 15px 0 15px;
-        }
-
-        /* 绘制横向连接线和直角弯折 */
-        .tree-level::before,
-        .tree-level::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 50%;
-            border-top: 4px solid var(--tree-line);
-            width: 50%;
-            height: 30px;
-        }
-
-        .tree-level::after {
-            right: auto;
-            left: 50%;
-            border-left: 4px solid var(--tree-line);
-        }
-
-        .tree-level:first-child::before,
-        .tree-level:last-child::after {
-            border: 0 none;
-        }
-
-        .tree-level:last-child::before {
-            border-right: 4px solid var(--tree-line);
-            border-radius: 0 10px 0 0;
-        }
-
-        .tree-level:first-child::after {
-            border-radius: 10px 0 0 0;
-        }
-
-        /* 如果是独苗（只有一个选项），不需要横线 */
-        .tree-level:only-child::after,
-        .tree-level:only-child::before {
-            display: none;
-        }
-
-        .tree-level:only-child {
-            padding-top: 0;
-        }
-
-        .tree-level.is-root {
-            padding-top: 0;
-        }
-
-        /* 根节点不需要顶部线条 */
 
         /* 节点卡片本体 */
         .timeline-node {
-            width: 120px;
-            background: #fff;
-            border: 4px solid var(--tree-line);
-            border-radius: 15px;
-            padding: 10px;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            width: 140px; /* 稍微加宽一点放剧情 */
+            background: #fff; border: 4px solid var(--tree-line); border-radius: 15px; padding: 10px;
+            text-align: center; position: relative; z-index: 2; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-
-        .timeline-node:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(46, 196, 182, 0.4);
-            border-color: var(--secondary);
+        .timeline-node:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(46, 196, 182, 0.4); border-color: var(--secondary); }
+        
+        .node-img { width: 100%; height: 90px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; background: #eee; border: 1px solid #ddd;}
+        
+        /* ⭐ 修改：节点内的剧情简述 */
+        .node-plot { 
+            font-size: 11px; color: #666; text-align: left; line-height: 1.5; 
+            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; 
+            overflow: hidden; 
         }
-
-        .node-img {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background: #eee;
-        }
-
-        .node-choice {
-            font-size: 13px;
-            font-weight: bold;
-            color: var(--text-main);
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* 当前所处位置的高亮 */
-        .active-node {
-            border-color: #E05A47 !important;
-            box-shadow: 0 0 15px rgba(224, 90, 71, 0.4);
-        }
-
+        
+        .active-node { border-color: #E05A47 !important; box-shadow: 0 0 15px rgba(224,90,71,0.4); }
         .current-pin {
-            position: absolute;
-            top: -15px;
-            right: -20px;
-            background: #E05A47;
-            color: #fff;
-            font-size: 12px;
-            font-weight: bold;
-            padding: 5px 10px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(224, 90, 71, 0.4);
-            z-index: 10;
-            animation: bouncing 1s infinite alternate;
+            position: absolute; top: -15px; right: -20px; background: #E05A47; color: #fff;
+            font-size: 12px; font-weight: bold; padding: 5px 10px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(224,90,71,0.4); z-index: 10; animation: bouncing 1s infinite alternate;
         }
 
         /* 动画配置 */
@@ -437,22 +357,29 @@
         </transition>
     </div>
 
-    <template id="tree-node-template">
-        <div :class="['tree-level', { 'is-root': node.parent_id === 0 }]">
-
-            <div :class="['timeline-node', { 'active-node': node.id === currentPageId }]" @click="jump(node.id)">
-                <img :src="node.image_url || 'https://placehold.co/100x80/eee/999?text=绘本'" class="node-img">
-                <div class="node-choice" :title="node.user_choice">{{ node.user_choice }}</div>
-                <div v-if="node.id === currentPageId" class="current-pin">📍 当前</div>
-            </div>
-
-            <div class="tree-children" v-if="node.children && node.children.length > 0">
-                <tree-node v-for="child in node.children" :key="child.id" :node="child" :current-page-id="currentPageId"
-                    @jump="jump"></tree-node>
-            </div>
-
+<template id="tree-node-template">
+    <div :class="['tree-level', { 'is-root': node.parent_id === 0 }]">
+        
+        <div v-if="node.parent_id !== 0" class="choice-badge" :title="node.user_choice">
+            {{ node.user_choice }}
         </div>
-    </template>
+
+        <div :class="['timeline-node', { 'active-node': node.id === currentPageId }]" @click="jump(node.id)">
+            <img :src="node.image_url || 'https://placehold.co/100x80/eee/999?text=绘本'" class="node-img">
+            
+            <div class="node-plot" :title="node.narrator_text">
+                {{ node.narrator_text }}
+            </div>
+            
+            <div v-if="node.id === currentPageId" class="current-pin">📍 当前</div>
+        </div>
+
+        <div class="tree-children" v-if="node.children && node.children.length > 0">
+            <tree-node v-for="child in node.children" :key="child.id" :node="child" :current-page-id="currentPageId" @jump="jump"></tree-node>
+        </div>
+
+    </div>
+</template>
 
     <script>
         // =========== 替换 index.html 里面的 script 部分 ===========
