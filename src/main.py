@@ -56,22 +56,35 @@ async def init_story_text(req: InitRequest):
 
 @app.post("/api/next_turn_text")
 async def next_turn_text(req: NextTurnRequest):
-    # 重建时间线记忆
+    
+    # 🌟 步骤 1：调用数据库里的函数，拿到“纯净版”的记忆列表
+    # req.parent_page_id 是前端传来的，代表玩家是“站在哪个节点上”做出的新选择
     features, memory_list, current_path = rebuild_llm_context(req.parent_page_id)
     if not features: raise HTTPException(status_code=404, detail="找不到时间线")
         
-    turn_data = generate_script_turn(features, "\n".join(memory_list), req.user_choice)
+    # 🌟 步骤 2：把数组拼接成大段文字
+    # memory_list 只是一个数组，我们用 "\n".join() 把它们用回车符连起来，变成一大段连续的字符串
+    # 这样大模型读起来就像在读前情提要
+    context_history = "\n".join(memory_list)
+    
+    # 🌟 步骤 3：正式喂给大模型！
+    # 调用 llm_engine.py 里的 generate_script_turn 函数
+    # 把主角长相 (features)、历史记忆 (context_history)、用户的新决定 (req.user_choice) 一起发过去
+    turn_data = generate_script_turn(features, context_history, req.user_choice)
     if not turn_data: raise HTTPException(status_code=500, detail="剧本生成失败")
 
+    # 🌟 步骤 4：计算新节点的深度
+    # 看看刚才走过的路径最后一个节点的深度是多少，新节点就在它基础上 +1
     depth = current_path[-1]["depth"] + 1 if current_path else 1
     
-    # 创建子节点
+    # 🌟 步骤 5：大模型生成完新剧情后，把这些新内容作为一个“新叶子节点”长在数据库的树上
     page_id = add_page_node(
         req.session_id, req.parent_page_id, depth, req.user_choice, 
         turn_data['narrator_text'], turn_data['actor_dialogue'],
         turn_data['story_action'], turn_data['story_scene']
     )
     
+    # 把结果返回给前端去展示
     return {
         "page_id": page_id,
         "narrator_text": turn_data['narrator_text'],

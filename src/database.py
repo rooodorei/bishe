@@ -108,32 +108,42 @@ def rebuild_llm_context(page_id):
     path = []
     current_id = page_id
     
-    # 从叶子节点一路查找到根节点
+    # 🌟 功能 1：溯源找祖先（顺藤摸瓜）
+    # 用一个 while 循环，从当前节点开始，不断向上找 parent_id，直到 parent_id 为 0（根节点）
     while current_id:
         cursor.execute("SELECT * FROM pages WHERE id = ?", (current_id,))
         node = cursor.fetchone()
         if not node: break
         path.append(node)
-        current_id = node["parent_id"]
+        current_id = node["parent_id"] # 把目光指向上一个节点，准备下一次循环
         
     conn.close()
     
     if not path: return None, [], []
     
-    # 倒序，变成从根到叶子的正常时间线
+    # 🌟 功能 2：时间线倒转
+    # 因为我们是从下往上找的，列表里的顺序是【最新 -> 最老】
+    # 使用 reverse() 把它反转成大模型习惯的阅读顺序【最老 -> 最新】
     path.reverse()
     
+    # 获取这本绘本的全局设定（比如主题、主角长相）
     book = get_storybook_info(path[0]["session_id"])
     
-    # 构建大模型记忆
+    # 🌟 功能 3：组装给大模型看的“记忆剧本”
+    # 第 1 句话永远是全局设定，确保大模型知道在这个世界里主角长什么样
     memory_list = [f"全局设定：故事主题是【{book['theme']}】。主角准备好冒险了。"]
+    
+    # 遍历刚才整理好的时间线，把玩家的选择和旁白拼成一句话，塞进记忆列表
     for p in path:
         if p["depth"] == 0:
             memory_list.append(f"故事开局：{p['narrator_text']}")
         else:
             memory_list.append(f"小朋友选择【{p['user_choice']}】，剧情：{p['narrator_text']}")
             
+    # 🌟 功能 4：防止记忆过载（大模型很容易遗忘或者token超载）
+    # 如果历史记录太长，我们只保留“全局设定(索引0)” + “最近的3次回合(切片[-3:])”
     if len(memory_list) > 4:
         memory_list = [memory_list[0]] + memory_list[-3:]
         
+    # 返回：主角设定特征、整理好的记忆列表、完整的故事路径字典
     return book['features'], memory_list, [dict(p) for p in path]
