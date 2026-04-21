@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +14,8 @@
             --bg-color: #FDFFFC;
             --text-main: #2B2D42;
             --paper-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            --tree-line: #A0E4DC; /* 树干连接线的颜色 */
+            --tree-line: #A0E4DC;
+            /* 树干连接线的颜色 */
         }
 
         body {
@@ -22,342 +24,592 @@
             background-image: radial-gradient(#e0ecec 2px, transparent 2px);
             background-size: 30px 30px;
             color: var(--text-main);
-            margin: 0; padding: 20px;
-            display: flex; justify-content: center; min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
         }
 
-        #app { width: 100%; max-width: 800px; position: relative; }
+        #app {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+
         .card {
-            background: var(--bg-color); border-radius: 30px; padding: 40px;
-            box-shadow: var(--paper-shadow); border: 4px solid #fff;
-            margin-bottom: 20px; position: relative; overflow: hidden;
+            background: var(--bg-color);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: var(--paper-shadow);
+            border: 4px solid #fff;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
         }
-        h1, h2, h3 { color: var(--primary); text-align: center; }
-        
+
+        h1,
+        h2,
+        h3 {
+            color: var(--primary);
+            text-align: center;
+        }
+
         .btn-chunky {
-            background-color: var(--primary); color: white; border: none; border-radius: 25px;
-            padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 6px 0 #D9734E; transition: all 0.1s; width: 100%; margin-top: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #D9734E;
+            transition: all 0.1s;
+            width: 100%;
+            margin-top: 15px;
         }
-        .btn-chunky:active { transform: translateY(6px); box-shadow: 0 0 0 #D9734E; }
-        .btn-chunky.secondary { background-color: var(--secondary); box-shadow: 0 6px 0 #1A9C8F; }
-        .btn-chunky.secondary:active { box-shadow: 0 0 0 #1A9C8F; }
 
-        .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { font-size: 18px; font-weight: bold; color: #555; display: block; margin-bottom: 10px; }
-        input, select { width: 100%; padding: 15px; border: 3px solid #eee; border-radius: 15px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; }
-        input:focus, select:focus { border-color: var(--secondary); background: #fff; }
+        .btn-chunky:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #D9734E;
+        }
 
-        .story-image-box { width: 100%; min-height: 250px; background: #eee; border-radius: 20px; overflow: hidden; margin-bottom: 20px; border: 4px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; display: flex; align-items: center; justify-content: center; }
-        .story-image-box img { width: 100%; display: block; }
-        .story-text-box { background: #FFF9E6; padding: 25px; border-radius: 20px; font-size: 18px; line-height: 1.8; border: 2px dashed #F2C94C; }
+        .btn-chunky.secondary {
+            background-color: var(--secondary);
+            box-shadow: 0 6px 0 #1A9C8F;
+        }
+
+        .btn-chunky.secondary:active {
+            box-shadow: 0 0 0 #1A9C8F;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 3px solid #eee;
+            border-radius: 15px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #fafafa;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--secondary);
+            background: #fff;
+        }
+
+        .story-image-box {
+            width: 100%;
+            min-height: 250px;
+            background: #eee;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .story-image-box img {
+            width: 100%;
+            display: block;
+        }
+
+        .story-text-box {
+            background: #FFF9E6;
+            padding: 25px;
+            border-radius: 20px;
+            font-size: 18px;
+            line-height: 1.8;
+            border: 2px dashed #F2C94C;
+        }
 
         /* ================= 硬核：命运之树 (分支时间线 CSS) ================= */
         .timeline-scroll-area {
-            overflow-x: auto; padding: 20px 20px 60px 20px; background: #fdfdfd;
-            border-radius: 20px; border: 4px dashed var(--tree-line); margin-bottom: 20px;
-            display: flex; justify-content: center; min-height: 300px;
+            overflow-x: auto;
+            padding: 20px 20px 60px 20px;
+            background: #fdfdfd;
+            border-radius: 20px;
+            border: 4px dashed var(--tree-line);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 300px;
         }
 
         /* 树的层级与容器 */
-        .tree-children { display: flex; justify-content: center; padding-top: 30px; position: relative; }
+        .tree-children {
+            display: flex;
+            justify-content: center;
+            padding-top: 30px;
+            position: relative;
+        }
+
         /* 树干向下延伸的竖线 */
         .tree-children::before {
-            content: ''; position: absolute; top: 0; left: 50%; margin-left: -2px;
-            border-left: 4px solid var(--tree-line); width: 0; height: 30px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -2px;
+            border-left: 4px solid var(--tree-line);
+            width: 0;
+            height: 30px;
         }
-        
+
         /* 单个节点容器 */
-        .tree-level { display: flex; flex-direction: column; align-items: center; position: relative; padding: 30px 15px 0 15px; }
-        
-        /* 绘制横向连接线和直角弯折 */
-        .tree-level::before, .tree-level::after {
-            content: ''; position: absolute; top: 0; right: 50%;
-            border-top: 4px solid var(--tree-line); width: 50%; height: 30px;
+        .tree-level {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding: 30px 15px 0 15px;
         }
-        .tree-level::after { right: auto; left: 50%; border-left: 4px solid var(--tree-line); }
-        .tree-level:first-child::before, .tree-level:last-child::after { border: 0 none; }
-        .tree-level:last-child::before { border-right: 4px solid var(--tree-line); border-radius: 0 10px 0 0; }
-        .tree-level:first-child::after { border-radius: 10px 0 0 0; }
+
+        /* 绘制横向连接线和直角弯折 */
+        .tree-level::before,
+        .tree-level::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
+            border-top: 4px solid var(--tree-line);
+            width: 50%;
+            height: 30px;
+        }
+
+        .tree-level::after {
+            right: auto;
+            left: 50%;
+            border-left: 4px solid var(--tree-line);
+        }
+
+        .tree-level:first-child::before,
+        .tree-level:last-child::after {
+            border: 0 none;
+        }
+
+        .tree-level:last-child::before {
+            border-right: 4px solid var(--tree-line);
+            border-radius: 0 10px 0 0;
+        }
+
+        .tree-level:first-child::after {
+            border-radius: 10px 0 0 0;
+        }
+
         /* 如果是独苗（只有一个选项），不需要横线 */
-        .tree-level:only-child::after, .tree-level:only-child::before { display: none; }
-        .tree-level:only-child { padding-top: 0; }
-        .tree-level.is-root { padding-top: 0; } /* 根节点不需要顶部线条 */
+        .tree-level:only-child::after,
+        .tree-level:only-child::before {
+            display: none;
+        }
+
+        .tree-level:only-child {
+            padding-top: 0;
+        }
+
+        .tree-level.is-root {
+            padding-top: 0;
+        }
+
+        /* 根节点不需要顶部线条 */
 
         /* 节点卡片本体 */
         .timeline-node {
-            width: 120px; background: #fff; border: 4px solid var(--tree-line); border-radius: 15px; padding: 10px;
-            text-align: center; position: relative; z-index: 2; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            width: 120px;
+            background: #fff;
+            border: 4px solid var(--tree-line);
+            border-radius: 15px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
-        .timeline-node:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(46, 196, 182, 0.4); border-color: var(--secondary); }
-        
-        .node-img { width: 100%; height: 80px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; background: #eee; }
-        .node-choice { font-size: 13px; font-weight: bold; color: var(--text-main); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        
+
+        .timeline-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(46, 196, 182, 0.4);
+            border-color: var(--secondary);
+        }
+
+        .node-img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #eee;
+        }
+
+        .node-choice {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-main);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
         /* 当前所处位置的高亮 */
-        .active-node { border-color: #E05A47 !important; box-shadow: 0 0 15px rgba(224,90,71,0.4); }
+        .active-node {
+            border-color: #E05A47 !important;
+            box-shadow: 0 0 15px rgba(224, 90, 71, 0.4);
+        }
+
         .current-pin {
-            position: absolute; top: -15px; right: -20px; background: #E05A47; color: #fff;
-            font-size: 12px; font-weight: bold; padding: 5px 10px; border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(224,90,71,0.4); z-index: 10; animation: bouncing 1s infinite alternate;
+            position: absolute;
+            top: -15px;
+            right: -20px;
+            background: #E05A47;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(224, 90, 71, 0.4);
+            z-index: 10;
+            animation: bouncing 1s infinite alternate;
         }
 
         /* 动画配置 */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(20px) scale(0.95); }
-        .fade-enter-to, .fade-leave-from { opacity: 1; transform: translateY(0) scale(1); }
-        
-        .bouncing-loader { display: flex; justify-content: center; gap: 10px; }
-        .bouncing-loader div { width: 16px; height: 16px; background: var(--primary); border-radius: 50%; animation: bouncing 0.5s infinite alternate; }
-        .bouncing-loader div:nth-child(2) { animation-delay: 0.15s; background: var(--secondary); }
-        .bouncing-loader div:nth-child(3) { animation-delay: 0.3s; background: #F2C94C; }
-        @keyframes bouncing { to { transform: translateY(-15px); } }
-    </style>
-</head>
-<body>
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
-<div id="app">
-    <transition name="fade" mode="out-in">
-        
-        <div v-if="currentScreen === 'setup'" class="card" key="setup">
-            <h1>🎨 创建你的奇妙绘本</h1>
-            <div class="input-group">
-                <label>你想去哪里探险？</label>
-                <select v-model="setupData.theme">
-                    <option value="魔法森林探险">🌲 魔法森林探险</option>
-                    <option value="太空宇宙漫游">🚀 太空宇宙漫游</option>
-                    <option value="深海寻宝奇遇">🌊 深海寻宝奇遇</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>主角是什么样子的？</label>
-                <input type="text" v-model="setupData.features" placeholder="例如：一个戴着红帽子的小女孩">
-            </div>
-            <button class="btn-chunky" @click="startGame">🚀 开始奇妙冒险！</button>
-        </div>
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
 
-        <div v-else-if="currentScreen === 'loading'" class="card" key="loading" style="text-align: center; padding: 60px 20px;">
-            <div class="bouncing-loader"><div></div><div></div><div></div></div>
-            <h2 style="margin-top: 30px; color: #555;">{{ loadingText }}</h2>
-            <p style="color: #888;">AI 画家和作家正在努力创作中...</p>
-        </div>
+        .fade-enter-to,
+        .fade-leave-from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
 
-        <div v-else-if="currentScreen === 'story'" class="card" key="story">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <button @click="viewTimeline" style="background: none; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; padding: 8px 15px; cursor: pointer; font-weight: bold;">
-                    🧭 打开命运之树
-                </button>
-            </div>
+        .bouncing-loader {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
 
-            <div class="story-image-box">
-                <div v-if="isDrawing" style="color: #888; font-weight: bold; text-align: center;">
-                    <div class="bouncing-loader" style="margin-bottom: 10px;"><div></div><div></div><div></div></div>
-                    等待画面显现...
-                </div>
-                <img v-else :src="currentImage + '?t=' + Date.now()" @error="handleImageError" alt="绘本画面">
-            </div>
+        .bouncing-loader div {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bouncing 0.5s infinite alternate;
+        }
 
-            <div class="story-text-box">
-                <p style="margin-top: 0;">{{ currentStory.narrator_text }}</p>
-                <p style="color: #E05A47; font-weight: bold; margin-bottom: 0;">
-                    👦 主角说："{{ currentStory.actor_dialogue }}"
-                </p>
-            </div>
+        .bouncing-loader div:nth-child(2) {
+            animation-delay: 0.15s;
+            background: var(--secondary);
+        }
 
-            <div style="margin-top: 30px;">
-                <h3 style="text-align: left; font-size: 18px; color: #555;">接下来做什么？</h3>
-                <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
-                    <button v-for="(opt, index) in currentStory.options" :key="index" 
-                            class="btn-chunky secondary" style="font-size: 16px; margin-top:0;"
-                            :disabled="isDrawing" @click="makeChoice(opt)">
-                        👉 {{ opt }}
-                    </button>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想..." style="margin: 0;">
-                    <button class="btn-chunky" style="width: auto; margin: 0; padding: 0 25px;" 
-                            :disabled="isDrawing || !customChoice" @click="makeChoice(customChoice)">出发</button>
-                </div>
-            </div>
-        </div>
+        .bouncing-loader div:nth-child(3) {
+            animation-delay: 0.3s;
+            background: #F2C94C;
+        }
 
-        <div v-else-if="currentScreen === 'timeline'" class="card" key="timeline">
-            <h2>🧭 命运之树</h2>
-            <p style="text-align: center; color: #888; margin-bottom: 20px;">所有的平行宇宙都在这里，点击任意节点即可跃迁回去改变命运！</p>
-            
-            <div class="timeline-scroll-area">
-                <tree-node v-if="timelineTree" :node="timelineTree" :current-page-id="currentPageId" @jump="jumpToNode"></tree-node>
-            </div>
-            
-            <button class="btn-chunky" @click="currentScreen = 'story'">🔙 返回当前故事</button>
-        </div>
-
-    </transition>
-</div>
-
-<template id="tree-node-template">
-    <div :class="['tree-level', { 'is-root': node.parent_id === 0 }]">
-        
-        <div :class="['timeline-node', { 'active-node': node.id === currentPageId }]" @click="jump(node.id)">
-            <img :src="node.image_url || 'https://placehold.co/100x80/eee/999?text=绘本'" class="node-img">
-            <div class="node-choice" :title="node.user_choice">{{ node.user_choice }}</div>
-            <div v-if="node.id === currentPageId" class="current-pin">📍 当前</div>
-        </div>
-
-        <div class="tree-children" v-if="node.children && node.children.length > 0">
-            <tree-node v-for="child in node.children" :key="child.id" :node="child" :current-page-id="currentPageId" @jump="jump"></tree-node>
-        </div>
-
-    </div>
-</template>
-
-<script>
-    const { createApp, ref, reactive } = Vue;
-
-    // 1. 定义递归组件（这是画树的核心）
-    const TreeNodeComponent = {
-        name: 'tree-node',
-        template: '#tree-node-template',
-        props: ['node', 'currentPageId'],
-        methods: {
-            jump(id) {
-                this.$emit('jump', id);
+        @keyframes bouncing {
+            to {
+                transform: translateY(-15px);
             }
         }
-    };
+    </style>
+</head>
 
-    // 2. 创建主应用
-    const app = createApp({
-        setup() {
-            const currentScreen = ref('setup');
-            const loadingText = ref('加载中...');
-            const isDrawing = ref(false);
-            
-            const sessionId = ref('');
-            const currentPageId = ref(0);
-            
-            const setupData = reactive({ theme: '魔法森林探险', features: 'a cute boy, wearing a yellow hat' });
-            const customChoice = ref('');
+<body>
 
-            const currentStory = reactive({ narrator_text: '', actor_dialogue: '', options: [] });
-            const currentImage = ref('');
-            
-            // 存储组装好的树形数据
-            const timelineTree = ref(null);
+    <div id="app">
+        <transition name="fade" mode="out-in">
 
-            const callApi = async (url, data) => {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.detail || '请求失败');
-                return result;
-            };
+            <div v-if="currentScreen === 'setup'" class="card" key="setup">
+                <h1>🎨 创建你的奇妙绘本</h1>
+                <div class="input-group">
+                    <label>你想去哪里探险？</label>
+                    <select v-model="setupData.theme">
+                        <option value="魔法森林探险">🌲 魔法森林探险</option>
+                        <option value="太空宇宙漫游">🚀 太空宇宙漫游</option>
+                        <option value="深海寻宝奇遇">🌊 深海寻宝奇遇</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>主角是什么样子的？</label>
+                    <input type="text" v-model="setupData.features" placeholder="例如：一个戴着红帽子的小女孩">
+                </div>
+                <button class="btn-chunky" @click="startGame">🚀 开始奇妙冒险！</button>
+            </div>
 
-            const processStoryData = (data) => {
-                if (data.session_id) sessionId.value = data.session_id;
-                currentPageId.value = data.page_id;
-                currentStory.narrator_text = data.narrator_text;
-                currentStory.actor_dialogue = data.actor_dialogue;
-                currentStory.options = data.options;
-                
-                customChoice.value = '';
-                currentScreen.value = 'story';
-                isDrawing.value = true;
-                fetchImage(data.page_id);
-            };
+            <div v-else-if="currentScreen === 'loading'" class="card" key="loading"
+                style="text-align: center; padding: 60px 20px;">
+                <div class="bouncing-loader">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <h2 style="margin-top: 30px; color: #555;">{{ loadingText }}</h2>
+                <p style="color: #888;">AI 画家和作家正在努力创作中...</p>
+            </div>
 
-            const fetchImage = async (pageId) => {
-                try {
-                    const res = await callApi('/api/render_image', { page_id: pageId });
-                    currentImage.value = res.image_url;
-                } catch (e) {
-                    console.error("图片生成失败", e);
-                } finally {
-                    isDrawing.value = false;
+            <div v-else-if="currentScreen === 'story'" class="card" key="story">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <button @click="viewTimeline"
+                        style="background: none; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; padding: 8px 15px; cursor: pointer; font-weight: bold;">
+                        🧭 打开命运之树
+                    </button>
+                </div>
+
+                <div class="story-image-box">
+                    <div v-if="isDrawing" style="color: #888; font-weight: bold; text-align: center;">
+                        <div class="bouncing-loader" style="margin-bottom: 10px;">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                        等待画面显现...
+                    </div>
+                    <img v-else :src="currentImage + '?t=' + Date.now()" @error="handleImageError" alt="绘本画面">
+                </div>
+
+                <div class="story-text-box">
+                    <p style="margin-top: 0;">{{ currentStory.narrator_text }}</p>
+                    <p style="color: #E05A47; font-weight: bold; margin-bottom: 0;">
+                        👦 主角说："{{ currentStory.actor_dialogue }}"
+                    </p>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="text-align: left; font-size: 18px; color: #555;">接下来做什么？</h3>
+                    <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
+                        <button v-for="(opt, index) in currentStory.options" :key="index" class="btn-chunky secondary"
+                            style="font-size: 16px; margin-top:0;" :disabled="isDrawing" @click="makeChoice(opt)">
+                            👉 {{ opt }}
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想..." style="margin: 0;">
+                        <button class="btn-chunky" style="width: auto; margin: 0; padding: 0 25px;"
+                            :disabled="isDrawing || !customChoice" @click="makeChoice(customChoice)">出发</button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else-if="currentScreen === 'timeline'" class="card" key="timeline">
+                <h2>🧭 命运之树</h2>
+                <p style="text-align: center; color: #888; margin-bottom: 20px;">所有的平行宇宙都在这里，点击任意节点即可跃迁回去改变命运！</p>
+
+                <div class="timeline-scroll-area">
+                    <tree-node v-if="timelineTree" :node="timelineTree" :current-page-id="currentPageId"
+                        @jump="jumpToNode"></tree-node>
+                </div>
+
+                <button class="btn-chunky" @click="currentScreen = 'story'">🔙 返回当前故事</button>
+            </div>
+
+        </transition>
+    </div>
+
+    <template id="tree-node-template">
+        <div :class="['tree-level', { 'is-root': node.parent_id === 0 }]">
+
+            <div :class="['timeline-node', { 'active-node': node.id === currentPageId }]" @click="jump(node.id)">
+                <img :src="node.image_url || 'https://placehold.co/100x80/eee/999?text=绘本'" class="node-img">
+                <div class="node-choice" :title="node.user_choice">{{ node.user_choice }}</div>
+                <div v-if="node.id === currentPageId" class="current-pin">📍 当前</div>
+            </div>
+
+            <div class="tree-children" v-if="node.children && node.children.length > 0">
+                <tree-node v-for="child in node.children" :key="child.id" :node="child" :current-page-id="currentPageId"
+                    @jump="jump"></tree-node>
+            </div>
+
+        </div>
+    </template>
+
+    <script>
+        // =========== 替换 index.html 里面的 script 部分 ===========
+
+        const { createApp, ref, reactive } = Vue;
+
+        const TreeNodeComponent = {
+            name: 'tree-node',
+            template: '#tree-node-template',
+            props: ['node', 'currentPageId'],
+            methods: {
+                jump(id) {
+                    this.$emit('jump', id);
                 }
-            };
+            }
+        };
 
-            const startGame = async () => {
-                try {
-                    loadingText.value = '正在推演世界的开端...';
-                    currentScreen.value = 'loading';
-                    const data = await callApi('/api/init_story_text', { child_features: setupData.features, theme: setupData.theme });
-                    processStoryData(data);
-                } catch (e) {
-                    alert("启动失败：" + e.message);
-                    currentScreen.value = 'setup';
-                }
-            };
+        const app = createApp({
+            setup() {
+                const currentScreen = ref('setup');
+                const loadingText = ref('加载中...');
+                const isDrawing = ref(false);
 
-            const makeChoice = async (choiceText) => {
-                try {
-                    loadingText.value = '正在编织未来的命运...';
-                    currentScreen.value = 'loading';
-                    const data = await callApi('/api/next_turn_text', { 
-                        session_id: sessionId.value,
-                        parent_page_id: currentPageId.value, 
-                        user_choice: choiceText 
+                const sessionId = ref('');
+                const currentPageId = ref(0);
+
+                const setupData = reactive({ theme: '魔法森林探险', features: 'a cute boy, wearing a yellow hat' });
+                const customChoice = ref('');
+
+                const currentStory = reactive({ narrator_text: '', actor_dialogue: '', options: [] });
+                const currentImage = ref('');
+
+                const timelineTree = ref(null);
+                const flatNodes = ref([]); // ⭐ 新增：用来存储所有的扁平节点，方便瞬间查找还原
+
+                const callApi = async (url, data) => {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
                     });
-                    processStoryData(data);
-                } catch (e) {
-                    alert("生成失败：" + e.message);
+                    const result = await res.json();
+                    if (!res.ok) throw new Error(result.detail || '请求失败');
+                    return result;
+                };
+
+                const processStoryData = (data) => {
+                    if (data.session_id) sessionId.value = data.session_id;
+                    currentPageId.value = data.page_id;
+                    currentStory.narrator_text = data.narrator_text;
+                    currentStory.actor_dialogue = data.actor_dialogue;
+                    currentStory.options = data.options;
+
+                    customChoice.value = '';
                     currentScreen.value = 'story';
-                }
-            };
+                    isDrawing.value = true;
+                    fetchImage(data.page_id);
+                };
 
-            // ================= 核心：把平铺的数据组装成树 =================
-            const viewTimeline = async () => {
-                loadingText.value = '正在检索命运之树...';
-                currentScreen.value = 'loading';
-                try {
-                    const res = await fetch(`/api/get_timeline/${sessionId.value}`);
-                    const data = await res.json();
-                    
-                    // 算法：一维数组转多维嵌套树
-                    let treeMap = {};
-                    let rootNode = null;
-                    data.nodes.forEach(n => { n.children = []; treeMap[n.id] = n; });
-                    data.nodes.forEach(n => {
-                        if (n.parent_id === 0) rootNode = n; // 找到根节点
-                        else if (treeMap[n.parent_id]) treeMap[n.parent_id].children.push(n); // 挂载到父节点下
-                    });
+                const fetchImage = async (pageId) => {
+                    try {
+                        const res = await callApi('/api/render_image', { page_id: pageId });
+                        currentImage.value = res.image_url;
+                    } catch (e) {
+                        console.error("图片生成失败", e);
+                    } finally {
+                        isDrawing.value = false;
+                    }
+                };
 
-                    timelineTree.value = rootNode;
-                    currentScreen.value = 'timeline';
-                } catch (e) {
-                    alert("读取时间线失败");
-                    currentScreen.value = 'story';
-                }
-            };
+                const startGame = async () => {
+                    try {
+                        loadingText.value = '正在推演世界的开端...';
+                        currentScreen.value = 'loading';
+                        const data = await callApi('/api/init_story_text', { child_features: setupData.features, theme: setupData.theme });
+                        processStoryData(data);
+                    } catch (e) {
+                        alert("启动失败：" + e.message);
+                        currentScreen.value = 'setup';
+                    }
+                };
 
-            const jumpToNode = (id) => {
-                currentPageId.value = id;
-                alert("✨ 时光倒流成功！系统已将你传送回这个节点，你可以在这里开辟新的分支！");
-                currentScreen.value = 'story';
-                isDrawing.value = true;
-                fetchImage(id);
-            };
+                const makeChoice = async (choiceText) => {
+                    try {
+                        loadingText.value = '正在编织未来的命运...';
+                        currentScreen.value = 'loading';
+                        const data = await callApi('/api/next_turn_text', {
+                            session_id: sessionId.value,
+                            parent_page_id: currentPageId.value,
+                            user_choice: choiceText
+                        });
+                        processStoryData(data);
+                    } catch (e) {
+                        alert("生成失败：" + e.message);
+                        currentScreen.value = 'story';
+                    }
+                };
 
-            const handleImageError = () => {
-                currentImage.value = 'https://placehold.co/800x400/eee/999?text=图片生成中...';
-            };
+                const viewTimeline = async () => {
+                    loadingText.value = '正在检索命运之树...';
+                    currentScreen.value = 'loading';
+                    try {
+                        const res = await fetch(`/api/get_timeline/${sessionId.value}`);
+                        const data = await res.json();
 
-            return {
-                currentScreen, loadingText, isDrawing, setupData, customChoice,
-                currentStory, currentImage, timelineTree, currentPageId,
-                startGame, makeChoice, viewTimeline, jumpToNode, handleImageError
-            };
-        }
-    });
+                        flatNodes.value = data.nodes; // ⭐ 存下所有节点数据
 
-    // 3. 将递归组件注册到主应用中
-    app.component('tree-node', TreeNodeComponent);
-    app.mount('#app');
-</script>
+                        let treeMap = {};
+                        let rootNode = null;
+                        data.nodes.forEach(n => { n.children = []; treeMap[n.id] = n; });
+                        data.nodes.forEach(n => {
+                            if (n.parent_id === 0) rootNode = n;
+                            else if (treeMap[n.parent_id]) treeMap[n.parent_id].children.push(n);
+                        });
+
+                        timelineTree.value = rootNode;
+                        currentScreen.value = 'timeline';
+                    } catch (e) {
+                        alert("读取时间线失败");
+                        currentScreen.value = 'story';
+                    }
+                };
+
+                // ⭐ 终极还原逻辑：在这个函数里完成“借尸还魂”
+                const jumpToNode = (id) => {
+                    // 从刚才保存的所有节点中，找出我们要回溯去的那个历史节点
+                    const targetNode = flatNodes.value.find(n => n.id === id);
+
+                    if (targetNode) {
+                        currentPageId.value = id;
+                        // 把页面的文字和选项，全部覆盖为历史节点的数据！
+                        currentStory.narrator_text = targetNode.narrator_text;
+                        currentStory.actor_dialogue = targetNode.actor_dialogue;
+                        currentStory.options = targetNode.options;
+                        currentImage.value = targetNode.image_url || 'https://placehold.co/800x400/2b2b36/00d2ff.png?text=Node+' + id;
+
+                        alert("✨ 时光倒流成功！你已回到这个节点，面前的选项和剧情已完美还原！");
+                        currentScreen.value = 'story';
+                    }
+                };
+
+                const handleImageError = () => {
+                    currentImage.value = 'https://placehold.co/800x400/eee/999?text=图片生成中...';
+                };
+
+                return {
+                    currentScreen, loadingText, isDrawing, setupData, customChoice,
+                    currentStory, currentImage, timelineTree, currentPageId,
+                    startGame, makeChoice, viewTimeline, jumpToNode, handleImageError
+                };
+            }
+        });
+
+        app.component('tree-node', TreeNodeComponent);
+        app.mount('#app');
+    </script>
 
 </body>
+
 </html>
