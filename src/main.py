@@ -15,6 +15,8 @@ from database import (
 
 app = FastAPI(title="儿童绘本生成系统 - 世界线版")
 init_db()
+IMAGE_DIR = "images"
+os.makedirs(IMAGE_DIR, exist_ok=True)
 
 class InitRequest(BaseModel):
     child_features: str
@@ -77,25 +79,32 @@ async def next_turn_text(req: NextTurnRequest):
         "options": turn_data['options']
     }
 '''
-
 @app.post("/api/render_image")
 async def render_image(req: RenderRequest):
     page = get_page(req.page_id)
     if not page: raise HTTPException(status_code=404, detail="找不到节点")
     book = get_storybook_info(page["session_id"])
 
+    # 真实调用 ComfyUI 生成图片
     img_path = generate_full_story_page(
         page["session_id"], book["features"], 
         page["action_prompt"], page["scene_prompt"]
     )
     if not img_path: raise HTTPException(status_code=500, detail="图片生成失败")
         
+    # 👇 修改点 1：组装新的保存路径 (例如: images/node_1.png)
     final_img_name = f"node_{req.page_id}.png"
-    if os.path.exists(final_img_name): os.remove(final_img_name)
-    os.rename(img_path, final_img_name)
+    final_img_path = os.path.join(IMAGE_DIR, final_img_name)
     
-    update_page_image(req.page_id, f"/{final_img_name}")
-    return {"image_url": f"/{final_img_name}"}
+    if os.path.exists(final_img_path): 
+        os.remove(final_img_path)
+    os.rename(img_path, final_img_path)
+    
+    # 👇 修改点 2：存入数据库和返回给前端的 URL 加上 /images/ 前缀
+    image_url = f"/{IMAGE_DIR}/{final_img_name}"
+    update_page_image(req.page_id, image_url)
+    
+    return {"image_url": image_url}
 '''
 #调试记得改回去
 @app.post("/api/render_image")
