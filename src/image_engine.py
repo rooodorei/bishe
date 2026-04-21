@@ -59,7 +59,7 @@ def generate_full_story_page(session_id, child_features, story_action, story_sce
     shutil.copy("temp_pose.png", os.path.join(COMFYUI_INPUT_DIR, "input_pose.png"))
     
     with open("workflow_stage3_final.json", "r", encoding="utf-8") as f: wf3 = json.load(f)
-    wf3["6"]["inputs"]["text"] += f",child, {story_scene}, high quality, detailed, colorful, cinematic lighting"
+    wf3["6"]["inputs"]["text"] += f",child, {story_scene}, high quality,({child_features}:1.3), detailed, colorful, cinematic lighting"
     print(f"🔍 [Stage 3 Prompt]: {wf3['6']['inputs']['text']}") # 显式输出
     wf3["8"]["inputs"]["image"] = "input_base.png" 
     wf3["14"]["inputs"]["image"] = "input_pose.png" 

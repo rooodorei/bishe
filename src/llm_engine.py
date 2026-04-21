@@ -60,7 +60,7 @@ def generate_script_turn(child_features, context_history, user_choice, max_retri
         
         # --- 步骤 1: 导演构思 ---
         director_user = f"【主角特征】：{child_features}\n【前情提要】：{context_history}\n【小朋友的选择】：{user_choice}"
-        # 如果有上一次的失败反馈，强行喂给导演
+        # 如果有上一次的失败反馈
         if critic_feedback:
             director_user += f"\n\n⚠️【上轮审核未通过，请修正】：{critic_feedback}"
 
@@ -82,7 +82,7 @@ def generate_script_turn(child_features, context_history, user_choice, max_retri
         actor_dialogue = chat_with_agent(actor_sys, actor_user)
         data['actor_dialogue'] = actor_dialogue
         
-        # --- 步骤 3: 评论家审核 (闭环反馈) ---
+        # --- 步骤 3: 评论家审核 ---
         print("🛡️ 评论家正在逐字审核...")
         critic_user = f"【旁白】：{narrator_text}\n【台词】：{actor_dialogue}"
         critic_verdict = chat_with_agent(critic_sys, critic_user)

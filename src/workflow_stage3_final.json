@@ -10,7 +10,7 @@
   },
   "6": {
     "inputs": {
-      "text": "masterpiece,Pixar-style",
+      "text": "masterpiece,Pixar-style,a child",
       "嵌入提示词": null,
       "clip": [
         "2",
