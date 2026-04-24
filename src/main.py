@@ -75,7 +75,7 @@ async def next_turn_text(req: NextTurnRequest):
     }
 
 
-'''
+
 @app.post("/api/render_image")
 async def render_image(req: RenderRequest):
     page = get_page(req.page_id)
@@ -102,8 +102,9 @@ async def render_image(req: RenderRequest):
     update_page_image(req.page_id, image_url)
     
     return {"image_url": image_url}
-'''
+
 #记得改回去
+'''
 @app.post("/api/render_image")
 async def render_image(req: RenderRequest):
     page = get_page(req.page_id)
@@ -117,7 +118,7 @@ async def render_image(req: RenderRequest):
     update_page_image(req.page_id, placeholder_url)
     
     return {"image_url": placeholder_url}
-
+'''
 @app.get("/api/get_timeline/{session_id}")
 async def get_timeline(session_id: str):
     book = get_storybook_info(session_id)
