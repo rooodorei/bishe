@@ -1,12 +1,11 @@
 """ComfyUI 绘图调用模块。
 
 正式绘图流程分为两步：
-1. 使用角色卡和 `TEST_workflow_character_base.json` 生成角色定妆照。
-2. 使用角色卡、动作提示词、场景提示词和 `TEST_workflow_story_page.json` 生成绘本页。
+1. 使用角色卡和 `workflows/zimage/character_base.json` 生成角色定妆照。
+2. 使用角色卡、动作提示词、场景提示词和 `workflows/zimage/story_page.json` 生成绘本页。
 """
 
 import json
-import os
 import random
 import time
 from datetime import datetime
@@ -14,11 +13,8 @@ from pathlib import Path
 
 import requests
 
-from character_card import build_character_card, build_story_page_prompt, save_character_card
-from config import COMFYUI_SERVER_ADDRESS
-
-
-ROOT_DIR = Path(__file__).resolve().parent
+from .character_card import build_character_card, build_story_page_prompt, save_character_card
+from .config import BASE_IMAGE_OUTPUT_DIR, CHARACTER_CARD_OUTPUT_DIR, COMFYUI_SERVER_ADDRESS, TEMP_OUTPUT_DIR, ZIMAGE_WORKFLOW_DIR
 
 
 def log(step, message):
@@ -27,8 +23,8 @@ def log(step, message):
 
 
 def load_workflow(filename):
-    """从 `src` 目录加载 ComfyUI 工作流 JSON。"""
-    with (ROOT_DIR / filename).open("r", encoding="utf-8") as f:
+    """从 `workflows/zimage` 目录加载 ComfyUI 工作流 JSON。"""
+    with (ZIMAGE_WORKFLOW_DIR / filename).open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -76,18 +72,18 @@ def generate_full_story_page(session_id, child_features, story_action, story_sce
     主角一致性由角色卡负责；LLM 只提供本页动作和场景。
     """
     card = build_character_card(child_features)
-    save_character_card(card, f"character_card_{session_id}.json")
+    save_character_card(card, CHARACTER_CARD_OUTPUT_DIR / f"character_card_{session_id}.json")
 
-    base_image_name = f"base_{session_id}.png"
-    if not os.path.exists(base_image_name):
+    base_image_path = BASE_IMAGE_OUTPUT_DIR / f"base_{session_id}.png"
+    if not base_image_path.exists():
         print(f">>> 绘本[{session_id}]是新任务，正在生成专属定妆照...")
-        wf1 = load_workflow("TEST_workflow_character_base.json")
+        wf1 = load_workflow("character_base.json")
         wf1["4"]["inputs"]["text"] = card.positive_prompt
         seed = random.randint(1, 999_999_999_999_999)
         wf1["7"]["inputs"]["noise_seed"] = seed
         wf1["9"]["inputs"]["noise_seed"] = seed + 1
         print(f"🔍 [Stage 1 Prompt]: {wf1['4']['inputs']['text']}")
-        result = run_comfyui_task(wf1, base_image_name, "阶段1:定妆照", preferred_node_id="11")
+        result = run_comfyui_task(wf1, base_image_path, "阶段1:定妆照", preferred_node_id="11")
         if not result:
             return None
     else:
@@ -101,11 +97,12 @@ def generate_full_story_page(session_id, child_features, story_action, story_sce
         "允许根据剧情自然改变姿态和表情，只有一个主角，儿童绘本页面插画"
     )
 
-    wf2 = load_workflow("TEST_workflow_story_page.json")
+    wf2 = load_workflow("story_page.json")
     wf2["4"]["inputs"]["text"] = positive
     seed = random.randint(1, 999_999_999_999_999)
     wf2["7"]["inputs"]["noise_seed"] = seed
     wf2["9"]["inputs"]["noise_seed"] = seed + 1
     print(f"🔍 [Stage 2 Prompt]: {wf2['4']['inputs']['text']}")
 
-    return run_comfyui_task(wf2, "final_storybook_page.png", "阶段2:最终绘本图", preferred_node_id="14")
+    final_page_path = TEMP_OUTPUT_DIR / "final_storybook_page.png"
+    return run_comfyui_task(wf2, final_page_path, "阶段2:最终绘本图", preferred_node_id="14")

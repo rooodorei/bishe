@@ -10,7 +10,7 @@ import json
 
 from openai import OpenAI
 
-from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
+from .config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 
 
 client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)

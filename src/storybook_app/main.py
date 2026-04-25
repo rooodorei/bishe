@@ -13,7 +13,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from database import (
+from .config import FRONTEND_DIR, IMAGE_OUTPUT_DIR
+from .database import (
     add_page_node,
     create_storybook,
     get_all_nodes,
@@ -23,15 +24,12 @@ from database import (
     rebuild_llm_context,
     update_page_image,
 )
-from image_engine import generate_full_story_page
-from llm_engine import generate_script_turn
+from .image_engine import generate_full_story_page
+from .llm_engine import generate_script_turn
 
 
 app = FastAPI(title="儿童绘本生成系统 - 命运之树版")
 init_db()
-
-IMAGE_DIR = "images"
-os.makedirs(IMAGE_DIR, exist_ok=True)
 
 
 class InitRequest(BaseModel):
@@ -141,13 +139,13 @@ async def render_image(req: RenderRequest):
         raise HTTPException(status_code=500, detail="图片生成失败")
 
     final_img_name = f"node_{req.page_id}.png"
-    final_img_path = os.path.join(IMAGE_DIR, final_img_name)
+    final_img_path = IMAGE_OUTPUT_DIR / final_img_name
 
-    if os.path.exists(final_img_path):
-        os.remove(final_img_path)
-    os.rename(img_path, final_img_path)
+    if final_img_path.exists():
+        final_img_path.unlink()
+    os.replace(img_path, final_img_path)
 
-    image_url = f"/{IMAGE_DIR}/{final_img_name}"
+    image_url = f"/images/{final_img_name}"
     update_page_image(req.page_id, image_url)
 
     return {"image_url": image_url}
@@ -163,4 +161,5 @@ async def get_timeline(session_id: str):
     return {"theme": book["theme"], "features": book["features"], "nodes": nodes}
 
 
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+app.mount("/images", StaticFiles(directory=IMAGE_OUTPUT_DIR), name="images")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

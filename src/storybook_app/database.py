@@ -9,8 +9,10 @@ import json
 import sqlite3
 from datetime import datetime
 
+from .config import DATA_DIR
 
-DB_FILE = "storybook.db"
+
+DB_FILE = DATA_DIR / "storybook.db"
 
 
 def init_db():
