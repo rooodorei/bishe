@@ -1,0 +1,916 @@
+{
+    "id": "842775ee-5ffb-462b-b6c0-dae399ac1a6f",
+    "revision": 0,
+    "last_node_id": 19,
+    "last_link_id": 45,
+    "nodes": [
+        {
+            "id": 11,
+            "type": "CLIPTextEncode",
+            "pos": [
+                519.6516723632812,
+                -1771.552001953125
+            ],
+            "size": [
+                400,
+                200
+            ],
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "clip",
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 13
+                },
+                {
+                    "localized_name": "文本",
+                    "name": "text",
+                    "type": "STRING",
+                    "widget": {
+                        "name": "text"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "条件",
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                        19
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "CLIPTextEncode"
+            },
+            "widgets_values": [
+                "EasyNegative,badhandv4,grayscale,verybadimagenegative_v1.3,negative_hand-neg,monochrome,bad_prompt_version2,FastNegativeV2,ugly,duplicate,mutated hands,(fused fingers),(too many fingers),(((long neck))),missing fingers,extra digit,fewer digits,bad feet,morbid,mutilated,tranny,mutated hands,poorly drawn hands,blurry,bad anatomy,bad proportions,extra limbs,cloned face,disfigured,more than 2 nipples,((((missing arms)))),(((extra legs))),mutated hands,(((((fused fingers))))),(((((too many fingers))))),(((unclear eyes))),lowers,bad anatomy,bad hands,text,error,missing fingers,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,blurry,bad feet,text font ui,malformed hands,long neck,missing limb,(mutated hand and finger:1.5),(long body:1.3),(mutation poorly drawn:1.2),disfigured,malformed mutated,multiple breasts,futa,yaoi,extra limbs,(bad anatomy),gross proportions,(malformed limbs),((missing arms)),((missing legs)),(((extra arms))),(((extra legs))),",
+                [
+                    false,
+                    true
+                ]
+            ]
+        },
+        {
+            "id": 13,
+            "type": "SaveImage",
+            "pos": [
+                2370.7158203125,
+                -1648.0162353515625
+            ],
+            "size": [
+                270,
+                270
+            ],
+            "flags": {},
+            "order": 10,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "图片",
+                    "name": "images",
+                    "type": "IMAGE",
+                    "link": 17
+                },
+                {
+                    "localized_name": "文件名前缀",
+                    "name": "filename_prefix",
+                    "type": "STRING",
+                    "widget": {
+                        "name": "filename_prefix"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49"
+            },
+            "widgets_values": [
+                "ComfyUI"
+            ]
+        },
+        {
+            "id": 12,
+            "type": "VAEDecode",
+            "pos": [
+                2110.307861328125,
+                -1670.948486328125
+            ],
+            "size": [
+                140,
+                46
+            ],
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "Latent",
+                    "name": "samples",
+                    "type": "LATENT",
+                    "link": 15
+                },
+                {
+                    "localized_name": "vae",
+                    "name": "vae",
+                    "type": "VAE",
+                    "link": 16
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "图像",
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                        17
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "VAEDecode"
+            },
+            "widgets_values": []
+        },
+        {
+            "id": 8,
+            "type": "EmptyLatentImage",
+            "pos": [
+                163.91006469726562,
+                -1158.093017578125
+            ],
+            "size": [
+                220,
+                106
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "宽度",
+                    "name": "width",
+                    "type": "INT",
+                    "widget": {
+                        "name": "width"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "高度",
+                    "name": "height",
+                    "type": "INT",
+                    "widget": {
+                        "name": "height"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "批量大小",
+                    "name": "batch_size",
+                    "type": "INT",
+                    "widget": {
+                        "name": "batch_size"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "label": "LATENT",
+                    "localized_name": "Latent",
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "slot_index": 0,
+                    "links": [
+                        9,
+                        45
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "EmptyLatentImage"
+            },
+            "widgets_values": [
+                576,
+                968,
+                1
+            ]
+        },
+        {
+            "id": 5,
+            "type": "ACN_ReferencePreprocessor",
+            "pos": [
+                505.8722839355469,
+                -1470.346435546875
+            ],
+            "size": [
+                315,
+                66
+            ],
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "image",
+                    "name": "image",
+                    "type": "IMAGE",
+                    "link": 31
+                },
+                {
+                    "localized_name": "vae",
+                    "name": "vae",
+                    "type": "VAE",
+                    "link": 3
+                },
+                {
+                    "localized_name": "latent_size",
+                    "name": "latent_size",
+                    "type": "LATENT",
+                    "link": 45
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "proc_IMAGE",
+                    "name": "proc_IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                        44
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfyui-advanced-controlnet",
+                "ver": "1.5.6",
+                "Node name for S&R": "ACN_ReferencePreprocessor"
+            },
+            "widgets_values": []
+        },
+        {
+            "id": 17,
+            "type": "ACN_ReferenceControlNet",
+            "pos": [
+                677.9932861328125,
+                -1155.7376708984375
+            ],
+            "size": [
+                315,
+                106
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "reference_type",
+                    "name": "reference_type",
+                    "type": "COMBO",
+                    "widget": {
+                        "name": "reference_type"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "style_fidelity",
+                    "name": "style_fidelity",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "style_fidelity"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "ref_weight",
+                    "name": "ref_weight",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "ref_weight"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "ControlNet",
+                    "name": "CONTROL_NET",
+                    "type": "CONTROL_NET",
+                    "links": [
+                        35
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfyui-advanced-controlnet",
+                "ver": "1.5.5",
+                "Node name for S&R": "ACN_ReferenceControlNet"
+            },
+            "widgets_values": [
+                "reference_adain",
+                0.5,
+                1
+            ]
+        },
+        {
+            "id": 7,
+            "type": "CheckpointLoaderSimple",
+            "pos": [
+                -176.42703247070312,
+                -1404.3621826171875
+            ],
+            "size": [
+                270,
+                98
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "Checkpoint名称",
+                    "name": "ckpt_name",
+                    "type": "COMBO",
+                    "widget": {
+                        "name": "ckpt_name"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "模型",
+                    "name": "MODEL",
+                    "type": "MODEL",
+                    "links": [
+                        8
+                    ]
+                },
+                {
+                    "localized_name": "CLIP",
+                    "name": "CLIP",
+                    "type": "CLIP",
+                    "links": [
+                        12,
+                        13
+                    ]
+                },
+                {
+                    "localized_name": "VAE",
+                    "name": "VAE",
+                    "type": "VAE",
+                    "links": [
+                        3,
+                        16,
+                        24
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "CheckpointLoaderSimple"
+            },
+            "widgets_values": [
+                "ChuXian2.5.safetensors"
+            ]
+        },
+        {
+            "id": 9,
+            "type": "KSampler",
+            "pos": [
+                1655.020263671875,
+                -1929.00146484375
+            ],
+            "size": [
+                270,
+                474
+            ],
+            "flags": {},
+            "order": 8,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "模型",
+                    "name": "model",
+                    "type": "MODEL",
+                    "link": 8
+                },
+                {
+                    "localized_name": "正面条件",
+                    "name": "positive",
+                    "type": "CONDITIONING",
+                    "link": 22
+                },
+                {
+                    "localized_name": "负面条件",
+                    "name": "negative",
+                    "type": "CONDITIONING",
+                    "link": 23
+                },
+                {
+                    "localized_name": "Latent图像",
+                    "name": "latent_image",
+                    "type": "LATENT",
+                    "link": 9
+                },
+                {
+                    "localized_name": "种子",
+                    "name": "seed",
+                    "type": "INT",
+                    "widget": {
+                        "name": "seed"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "步数",
+                    "name": "steps",
+                    "type": "INT",
+                    "widget": {
+                        "name": "steps"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "cfg",
+                    "name": "cfg",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "cfg"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "采样器名称",
+                    "name": "sampler_name",
+                    "type": "COMBO",
+                    "widget": {
+                        "name": "sampler_name"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "调度器",
+                    "name": "scheduler",
+                    "type": "COMBO",
+                    "widget": {
+                        "name": "scheduler"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "降噪",
+                    "name": "denoise",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "denoise"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "Latent",
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": [
+                        15
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [
+                1082243065437543,
+                "randomize",
+                50,
+                8,
+                "dpmpp_2m",
+                "normal",
+                1
+            ]
+        },
+        {
+            "id": 14,
+            "type": "ACN_AdvancedControlNetApply_v2",
+            "pos": [
+                1172.96044921875,
+                -1547.2454833984375
+            ],
+            "size": [
+                276.9976501464844,
+                266
+            ],
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "positive",
+                    "name": "positive",
+                    "type": "CONDITIONING",
+                    "link": 18
+                },
+                {
+                    "localized_name": "negative",
+                    "name": "negative",
+                    "type": "CONDITIONING",
+                    "link": 19
+                },
+                {
+                    "localized_name": "control_net",
+                    "name": "control_net",
+                    "type": "CONTROL_NET",
+                    "link": 35
+                },
+                {
+                    "localized_name": "image",
+                    "name": "image",
+                    "type": "IMAGE",
+                    "link": 44
+                },
+                {
+                    "localized_name": "mask_optional",
+                    "name": "mask_optional",
+                    "shape": 7,
+                    "type": "MASK",
+                    "link": 43
+                },
+                {
+                    "localized_name": "timestep_kf",
+                    "name": "timestep_kf",
+                    "shape": 7,
+                    "type": "TIMESTEP_KEYFRAME",
+                    "link": null
+                },
+                {
+                    "localized_name": "latent_kf_override",
+                    "name": "latent_kf_override",
+                    "shape": 7,
+                    "type": "LATENT_KEYFRAME",
+                    "link": null
+                },
+                {
+                    "localized_name": "weights_override",
+                    "name": "weights_override",
+                    "shape": 7,
+                    "type": "CONTROL_NET_WEIGHTS",
+                    "link": null
+                },
+                {
+                    "localized_name": "vae_optional",
+                    "name": "vae_optional",
+                    "shape": 7,
+                    "type": "VAE",
+                    "link": 24
+                },
+                {
+                    "localized_name": "strength",
+                    "name": "strength",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "strength"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "start_percent",
+                    "name": "start_percent",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "start_percent"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "end_percent",
+                    "name": "end_percent",
+                    "type": "FLOAT",
+                    "widget": {
+                        "name": "end_percent"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "positive",
+                    "name": "positive",
+                    "type": "CONDITIONING",
+                    "links": [
+                        22
+                    ]
+                },
+                {
+                    "localized_name": "negative",
+                    "name": "negative",
+                    "type": "CONDITIONING",
+                    "links": [
+                        23
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfyui-advanced-controlnet",
+                "ver": "1.5.6",
+                "Node name for S&R": "ACN_AdvancedControlNetApply_v2"
+            },
+            "widgets_values": [
+                1.5000000000000002,
+                0,
+                1
+            ]
+        },
+        {
+            "id": 1,
+            "type": "LoadImage",
+            "pos": [
+                -346.7222900390625,
+                -1902.5482177734375
+            ],
+            "size": [
+                270,
+                314
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "图像",
+                    "name": "image",
+                    "type": "COMBO",
+                    "widget": {
+                        "name": "image"
+                    },
+                    "link": null
+                },
+                {
+                    "localized_name": "选择文件上传",
+                    "name": "upload",
+                    "type": "IMAGEUPLOAD",
+                    "widget": {
+                        "name": "upload"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "图像",
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [
+                        31
+                    ]
+                },
+                {
+                    "localized_name": "遮罩",
+                    "name": "MASK",
+                    "type": "MASK",
+                    "links": [
+                        43
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "LoadImage"
+            },
+            "widgets_values": [
+                "Result_01083_.png",
+                "image"
+            ]
+        },
+        {
+            "id": 10,
+            "type": "CLIPTextEncode",
+            "pos": [
+                522.90771484375,
+                -2024.7142333984375
+            ],
+            "size": [
+                400,
+                200
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+                {
+                    "localized_name": "clip",
+                    "name": "clip",
+                    "type": "CLIP",
+                    "link": 12
+                },
+                {
+                    "localized_name": "文本",
+                    "name": "text",
+                    "type": "STRING",
+                    "widget": {
+                        "name": "text"
+                    },
+                    "link": null
+                }
+            ],
+            "outputs": [
+                {
+                    "localized_name": "条件",
+                    "name": "CONDITIONING",
+                    "type": "CONDITIONING",
+                    "links": [
+                        18
+                    ]
+                }
+            ],
+            "properties": {
+                "cnr_id": "comfy-core",
+                "ver": "0.3.49",
+                "Node name for S&R": "CLIPTextEncode"
+            },
+            "widgets_values": [
+                "1girl, solo, short hair, bangs, skirt, shirt, black hair, brown eyes, closed mouth, school uniform, white shirt, upper body, flower, short sleeves, outdoors, sky, serafuku, sailor collar, blurry, blue skirt, neckerchief, petals, blue sailor collar, cherry blossoms, red neckerchief, branch",
+                [
+                    false,
+                    true
+                ]
+            ]
+        }
+    ],
+    "links": [
+        [
+            3,
+            7,
+            2,
+            5,
+            1,
+            "VAE"
+        ],
+        [
+            8,
+            7,
+            0,
+            9,
+            0,
+            "MODEL"
+        ],
+        [
+            9,
+            8,
+            0,
+            9,
+            3,
+            "LATENT"
+        ],
+        [
+            12,
+            7,
+            1,
+            10,
+            0,
+            "CLIP"
+        ],
+        [
+            13,
+            7,
+            1,
+            11,
+            0,
+            "CLIP"
+        ],
+        [
+            15,
+            9,
+            0,
+            12,
+            0,
+            "LATENT"
+        ],
+        [
+            16,
+            7,
+            2,
+            12,
+            1,
+            "VAE"
+        ],
+        [
+            17,
+            12,
+            0,
+            13,
+            0,
+            "IMAGE"
+        ],
+        [
+            18,
+            10,
+            0,
+            14,
+            0,
+            "CONDITIONING"
+        ],
+        [
+            19,
+            11,
+            0,
+            14,
+            1,
+            "CONDITIONING"
+        ],
+        [
+            22,
+            14,
+            0,
+            9,
+            1,
+            "CONDITIONING"
+        ],
+        [
+            23,
+            14,
+            1,
+            9,
+            2,
+            "CONDITIONING"
+        ],
+        [
+            24,
+            7,
+            2,
+            14,
+            8,
+            "VAE"
+        ],
+        [
+            31,
+            1,
+            0,
+            5,
+            0,
+            "IMAGE"
+        ],
+        [
+            35,
+            17,
+            0,
+            14,
+            2,
+            "CONTROL_NET"
+        ],
+        [
+            43,
+            1,
+            1,
+            14,
+            4,
+            "MASK"
+        ],
+        [
+            44,
+            5,
+            0,
+            14,
+            3,
+            "IMAGE"
+        ],
+        [
+            45,
+            8,
+            0,
+            5,
+            2,
+            "LATENT"
+        ]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {
+        "ds": {
+            "scale": 3.855432894295326,
+            "offset": [
+                505.87680304502874,
+                1845.1055167563657
+            ]
+        }
+    },
+    "version": 0.4
+}

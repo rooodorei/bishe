@@ -3,6 +3,9 @@
 数据库保存两类数据：
 1. `storybooks`：绘本会话级信息，例如主题和主角特征。
 2. `pages`：剧情节点级信息，例如父子关系、旁白、绘图提示词和图片 URL。
+
+当前项目使用同步 SQLite 访问。对本地演示和毕业设计原型来说足够简单；如果后续并发量变大，
+可以考虑迁移到 SQLAlchemy 或异步数据库访问。
 """
 
 import json
@@ -12,6 +15,7 @@ from datetime import datetime
 from .config import DATA_DIR
 
 
+# 数据库文件放在 data/ 下，避免和源码混在一起。
 DB_FILE = DATA_DIR / "storybook.db"
 
 
@@ -20,6 +24,7 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
+    # 绘本会话表：一本绘本对应一条记录。
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS storybooks (
             session_id TEXT PRIMARY KEY,
@@ -29,6 +34,10 @@ def init_db():
         )
     ''')
 
+    # 页面节点表：每一次剧情生成都会产生一个节点。
+    # parent_id + depth 用于构造“命运之树”。
+    # action_prompt 和 scene_prompt 是 LLM 输出的中文绘图提示词。
+    # options_json 保存下一步选项，读取时会重新解析为 Python list。
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS pages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,10 +83,21 @@ def add_page_node(
 ):
     """新增一个剧情节点，并返回新节点 ID。
 
-    `options_list` 是 Python 列表，写入 SQLite 前需要序列化为 JSON 字符串。
+    Args:
+        session_id: 所属绘本会话 ID。
+        parent_id: 父节点 ID；根节点固定为 0。
+        depth: 节点深度；根节点为 0。
+        user_choice: 用户进入该节点时选择的文本。
+        narrator_text: 本页旁白。
+        actor_dialogue: 主角第一人称台词。
+        action_prompt: 中文动作绘图提示词。
+        scene_prompt: 中文场景绘图提示词。
+        options_list: 下一步选项列表。
     """
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+
+    # SQLite 没有原生 list 类型，所以选项列表以 JSON 字符串形式保存。
     options_str = json.dumps(options_list, ensure_ascii=False)
 
     cursor.execute(
@@ -115,6 +135,7 @@ def update_page_image(page_id, image_url):
 def get_page(page_id):
     """按节点 ID 查询单个剧情节点。"""
     conn = sqlite3.connect(DB_FILE)
+    # row_factory 让查询结果支持 page["字段名"] 的访问方式，调用处更直观。
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM pages WHERE id = ?", (page_id,))
@@ -135,7 +156,10 @@ def get_storybook_info(session_id):
 
 
 def get_all_nodes(session_id):
-    """查询一个绘本会话下的全部剧情节点。"""
+    """查询一个绘本会话下的全部剧情节点。
+
+    返回给前端前会把 `options_json` 解析成 `options` 字段，方便前端直接使用。
+    """
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -149,6 +173,7 @@ def get_all_nodes(session_id):
         try:
             node_dict["options"] = json.loads(node_dict.get("options_json") or "[]")
         except Exception:
+            # 即使某条历史数据的 options_json 损坏，也不要影响整棵树返回。
             node_dict["options"] = []
         result.append(node_dict)
     return result
@@ -157,7 +182,12 @@ def get_all_nodes(session_id):
 def rebuild_llm_context(page_id):
     """从当前节点回溯到根节点，重建给大模型使用的上下文。
 
-    为了控制提示词长度，只保留全局设定和最近三段剧情记忆。
+    LLM 不需要看到整棵树，只需要看到当前分支的前情提要。本函数会沿 `parent_id`
+    从当前节点回溯到根节点，再反转为从根到当前的顺序。
+
+    为了控制提示词长度，最终只保留：
+    - 全局设定。
+    - 最近 3 条剧情记忆。
     """
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -166,6 +196,7 @@ def rebuild_llm_context(page_id):
     path = []
     current_id = page_id
 
+    # parent_id=0 表示到达根节点之前的终止位置。
     while current_id:
         cursor.execute("SELECT * FROM pages WHERE id = ?", (current_id,))
         node = cursor.fetchone()
@@ -179,6 +210,7 @@ def rebuild_llm_context(page_id):
     if not path:
         return None, [], []
 
+    # 回溯得到的是“当前 -> 根”，反转后变成“根 -> 当前”。
     path.reverse()
     book = get_storybook_info(path[0]["session_id"])
 

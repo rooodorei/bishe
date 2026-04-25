@@ -115,6 +115,111 @@
             background: #fff;
         }
 
+        .avatar-builder {
+            background: linear-gradient(135deg, #fff7ec 0%, #f0fffd 100%);
+            border: 3px dashed #ffd2b8;
+            border-radius: 24px;
+            padding: 22px;
+            margin-bottom: 22px;
+        }
+
+        .avatar-preview {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 18px;
+            border: 2px solid #fff;
+        }
+
+        .avatar-face {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: #ffe2c7;
+            border: 5px solid #fff;
+            box-shadow: 0 8px 18px rgba(255, 155, 113, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            flex-shrink: 0;
+        }
+
+        .avatar-summary {
+            flex: 1;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .avatar-summary strong {
+            color: var(--primary);
+        }
+
+        .builder-section {
+            margin-top: 18px;
+        }
+
+        .builder-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .option-pill {
+            border: 2px solid #eee;
+            background: #fff;
+            border-radius: 18px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+            transition: all 0.18s ease;
+            box-shadow: 0 3px 0 #e8e8e8;
+        }
+
+        .option-pill:hover {
+            transform: translateY(-2px);
+            border-color: var(--secondary);
+        }
+
+        .option-pill.active {
+            border-color: var(--primary);
+            background: #fff1e9;
+            color: #d9734e;
+            box-shadow: 0 3px 0 #ffd0bc;
+        }
+
+        .feature-toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .mini-btn {
+            border: none;
+            border-radius: 14px;
+            padding: 10px 14px;
+            cursor: pointer;
+            background: var(--secondary);
+            color: white;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
         .story-image-box {
             width: 100%;
             min-height: 250px;
@@ -281,9 +386,41 @@
                         <option value="深海寻宝奇遇">🌊 深海寻宝奇遇</option>
                     </select>
                 </div>
+                <div class="avatar-builder">
+                    <h2 style="margin-top: 0;">🧸 捏一捏你的主角</h2>
+                    <div class="avatar-preview">
+                        <div class="avatar-face">{{ avatarFaceIcon }}</div>
+                        <div class="avatar-summary">
+                            <strong>当前角色：</strong>{{ generatedFeatureText }}
+                            <div style="font-size: 13px; color: #888; margin-top: 4px;">
+                                下面的选择会自动填入“主角特征”，也可以继续手动修改。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="builder-section" v-for="group in avatarOptionGroups" :key="group.key">
+                        <div class="builder-title">{{ group.icon }} {{ group.label }}</div>
+                        <div class="option-grid">
+                            <button
+                                v-for="option in group.options"
+                                :key="option.value"
+                                type="button"
+                                :class="['option-pill', { active: avatarChoices[group.key] === option.value }]"
+                                @click="selectAvatarOption(group.key, option.value)"
+                            >
+                                {{ option.label }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="input-group">
-                    <label>主角是什么样子的？</label>
-                    <input type="text" v-model="setupData.features" placeholder="例如：一个戴着红帽子的小女孩">
+                    <label>主角特征</label>
+                    <input type="text" v-model="setupData.features" placeholder="例如：白色短发，红色斗篷的小女孩，戴星星发卡">
+                    <div class="feature-toolbar">
+                        <button type="button" class="mini-btn" @click="applyAvatarFeatures">使用上面的捏脸结果</button>
+                        <span style="font-size: 13px; color: #888;">如果想更自由，也可以直接在输入框里改。</span>
+                    </div>
                 </div>
                 <button class="btn-chunky" @click="startGame">🚀 开始奇妙冒险！</button>
             </div>
@@ -384,7 +521,7 @@
     <script>
         // =========== 替换 index.html 里面的 script 部分 ===========
 
-        const { createApp, ref, reactive } = Vue;
+        const { createApp, ref, reactive, computed } = Vue;
 
         const TreeNodeComponent = {
             name: 'tree-node',
@@ -406,7 +543,73 @@
                 const sessionId = ref('');
                 const currentPageId = ref(0);
 
-                const setupData = reactive({ theme: '魔法森林探险', features: 'a cute girl,white hair, wearing a yellow hat' });
+                const setupData = reactive({ theme: '魔法森林探险', features: '' });
+                const avatarChoices = reactive({
+                    role: '小女孩',
+                    hair: '白色短发',
+                    clothes: '红色斗篷，浅黄色连衣裙',
+                    accessory: '星星发卡',
+                    shoes: '棕色小靴子'
+                });
+                const avatarOptionGroups = [
+                    {
+                        key: 'role',
+                        label: '主角身份',
+                        icon: '👧',
+                        options: [
+                            { label: '小女孩', value: '小女孩' },
+                            { label: '小男孩', value: '小男孩' },
+                            { label: '小兔子', value: '拟人化的小兔子' },
+                            { label: '小狐狸', value: '拟人化的小狐狸' }
+                        ]
+                    },
+                    {
+                        key: 'hair',
+                        label: '发型颜色',
+                        icon: '💇',
+                        options: [
+                            { label: '白色短发', value: '白色短发' },
+                            { label: '黑色短发', value: '黑色短发' },
+                            { label: '棕色卷发', value: '棕色卷发' },
+                            { label: '金色长发', value: '金色长发' },
+                            { label: '双马尾', value: '黑色双马尾' }
+                        ]
+                    },
+                    {
+                        key: 'clothes',
+                        label: '固定服装',
+                        icon: '👗',
+                        options: [
+                            { label: '红斗篷黄裙', value: '红色斗篷，浅黄色连衣裙' },
+                            { label: '蓝外套短裤', value: '蓝色外套，白色衬衫，棕色短裤' },
+                            { label: '绿色背带裤', value: '绿色背带裤，黄色衬衫' },
+                            { label: '粉色连衣裙', value: '粉色连衣裙，白色小围巾' }
+                        ]
+                    },
+                    {
+                        key: 'accessory',
+                        label: '标志配饰',
+                        icon: '⭐',
+                        options: [
+                            { label: '星星发卡', value: '星星发卡' },
+                            { label: '圆框眼镜', value: '圆框眼镜' },
+                            { label: '小书包', value: '小书包' },
+                            { label: '彩色围巾', value: '彩色围巾' },
+                            { label: '无额外配饰', value: '不添加额外复杂配饰' }
+                        ]
+                    },
+                    {
+                        key: 'shoes',
+                        label: '鞋子',
+                        icon: '🥾',
+                        options: [
+                            { label: '棕色小靴子', value: '棕色小靴子' },
+                            { label: '红色运动鞋', value: '红色运动鞋' },
+                            { label: '蓝色雨靴', value: '蓝色雨靴' },
+                            { label: '白色小鞋子', value: '白色小鞋子' }
+                        ]
+                    }
+                ];
                 const customChoice = ref('');
 
                 const currentStory = reactive({ narrator_text: '', actor_dialogue: '', options: [] });
@@ -414,6 +617,31 @@
 
                 const timelineTree = ref(null);
                 const flatNodes = ref([]); // ⭐ 新增：用来存储所有的扁平节点，方便瞬间查找还原
+
+                const generatedFeatureText = computed(() => {
+                    const accessoryText = avatarChoices.accessory === '不添加额外复杂配饰'
+                        ? '不添加额外复杂配饰'
+                        : `戴${avatarChoices.accessory}`;
+                    return `${avatarChoices.hair}，${avatarChoices.clothes}，${avatarChoices.role}，${accessoryText}，穿${avatarChoices.shoes}`;
+                });
+
+                const avatarFaceIcon = computed(() => {
+                    if (avatarChoices.role.includes('男孩')) return '👦';
+                    if (avatarChoices.role.includes('兔子')) return '🐰';
+                    if (avatarChoices.role.includes('狐狸')) return '🦊';
+                    return '👧';
+                });
+
+                const applyAvatarFeatures = () => {
+                    setupData.features = generatedFeatureText.value;
+                };
+
+                const selectAvatarOption = (key, value) => {
+                    avatarChoices[key] = value;
+                    applyAvatarFeatures();
+                };
+
+                applyAvatarFeatures();
 
                 const callApi = async (url, data) => {
                     const res = await fetch(url, {
@@ -526,7 +754,8 @@
                 };
 
                 return {
-                    currentScreen, loadingText, isDrawing, setupData, customChoice,
+                    currentScreen, loadingText, isDrawing, setupData, avatarChoices, avatarOptionGroups,
+                    generatedFeatureText, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
                     currentStory, currentImage, timelineTree, currentPageId,
                     startGame, makeChoice, viewTimeline, jumpToNode, handleImageError
                 };

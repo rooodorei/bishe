@@ -1,6 +1,14 @@
 """ComfyUI 绘图测试脚本。
 
-该脚本不会被正式 API 调用，主要用于单独验证角色卡和 Z-Image 工作流。
+该脚本不会被正式 FastAPI 接口调用，主要用于单独验证以下内容：
+1. 正式角色卡模块能否生成稳定提示词。
+2. `workflows/zimage/character_base.json` 能否生成角色定妆照。
+3. `workflows/zimage/story_page.json` 能否生成绘本页。
+
+运行方式示例：
+`uv run python tests/test_image_engine.py`
+
+注意：运行前必须确保 ComfyUI 已启动，且工作流中引用的模型已经安装。
 """
 
 import json
@@ -15,11 +23,17 @@ from storybook_app.character_card import build_character_card, build_story_page_
 from storybook_app.config import COMFYUI_SERVER_ADDRESS, PROJECT_ROOT
 
 
+# 测试输出单独放在 outputs/test_assets，避免和正式 API 生成的图片混在一起。
 TEST_ASSET_DIR = PROJECT_ROOT / "outputs" / "test_assets"
+
+# 测试脚本和正式绘图模块使用同一套 Z-Image 工作流，保证测试结果有参考意义。
 WORKFLOW_DIR = PROJECT_ROOT / "workflows" / "zimage"
 TEST_ASSET_DIR.mkdir(parents=True, exist_ok=True)
 
+# 固定测试主角，便于多次运行时观察角色一致性。
 TEST_CHILD_FEATURES = "白色短发，红色斗篷的小女孩，戴星星发卡，浅黄色连衣裙，棕色小靴子"
+
+# 固定测试页面，不依赖 LLM，便于只测试绘图链路。
 TEST_STORY_PAGES = [
     {
         "page_id": 1,
@@ -41,10 +55,12 @@ TEST_STORY_PAGES = [
 
 
 def log(step: str, message: str) -> None:
+    """打印测试阶段日志。"""
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {step} | {message}")
 
 
 def _load_workflow(filename: str) -> dict:
+    """加载测试用 ComfyUI 工作流。"""
     with (WORKFLOW_DIR / filename).open("r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -55,6 +71,10 @@ def run_comfyui_task(
     task_name: str = "TEST任务",
     preferred_node_id: str | None = None,
 ) -> str | None:
+    """提交测试工作流并下载图片。
+
+    该函数基本复制正式 `image_engine.run_comfyui_task()` 的逻辑，方便测试脚本独立运行。
+    """
     try:
         res = requests.post(f"{COMFYUI_SERVER_ADDRESS}/prompt", json={"prompt": workflow_json}, timeout=20)
         res.raise_for_status()
@@ -95,6 +115,7 @@ def run_comfyui_task(
 
 
 def create_test_character_assets(session_id: str, child_features: str) -> dict:
+    """生成或复用测试角色定妆照。"""
     card = build_character_card(child_features)
     card_path = TEST_ASSET_DIR / f"character_card_{session_id}.json"
     base_image_path = TEST_ASSET_DIR / f"character_base_{session_id}.png"
@@ -129,6 +150,7 @@ def generate_test_full_story_page(
     story_scene: str,
     page_id: int = 1,
 ) -> str:
+    """生成一张测试绘本页。"""
     assets = create_test_character_assets(session_id, child_features)
     card = assets["character_card"]
 
@@ -152,6 +174,7 @@ def generate_test_full_story_page(
 
 
 def generate_test_storybook_content(session_id: str = "demo", child_features: str = TEST_CHILD_FEATURES) -> list[dict]:
+    """按固定测试页面批量生成测试绘本图。"""
     results = []
     for page in TEST_STORY_PAGES:
         log("TEST绘本节点", f"第 {page['page_id']} 页 | 选择：{page['user_choice']}")

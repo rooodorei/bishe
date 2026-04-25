@@ -1,7 +1,11 @@
 """角色卡与绘图提示词构建模块。
 
-角色卡用于把用户输入的主角特征整理成稳定结构，后续每一页绘图都复用这些固定字段，
-从而尽量保持同一个角色、同一套服装和同一配色。
+角色卡的目的：
+- 把用户输入的自然语言主角特征，整理成结构化字段。
+- 在每一页绘图时重复注入这些字段，降低角色漂移概率。
+- 把“主角是谁”和“这一页发生什么”分开：
+  - 主角固定设定由角色卡负责。
+  - 当前页动作和场景由 LLM 输出负责。
 """
 
 import json
@@ -12,7 +16,20 @@ from pathlib import Path
 
 @dataclass
 class CharacterCard:
-    """单个绘本会话的主角设定。"""
+    """单个绘本会话的主角设定。
+
+    Attributes:
+        raw_features: 规范化后的用户原始输入。
+        role: 主角身份，例如“可爱的小女孩”。
+        hair: 发型锚点。
+        face: 面部风格锚点。
+        clothes: 固定服装锚点。
+        accessories: 固定配饰锚点。
+        colors: 固定主色锚点。
+        style: 统一画风描述。
+        positive_prompt: 角色定妆照正向提示词。
+        negative_prompt: 负向约束提示词。
+    """
 
     raw_features: str
     role: str
@@ -27,6 +44,7 @@ class CharacterCard:
 
 
 # 下面四组词表用于从用户输入中提取可复用的视觉锚点。
+# 词表不是为了完整 NLP 理解，而是为了抓住最容易影响角色一致性的显式词语。
 COLOR_WORDS = [
     "红色", "橙色", "黄色", "绿色", "蓝色", "紫色", "粉色", "白色", "黑色", "灰色", "棕色", "金色", "银色",
     "浅黄", "浅蓝", "浅绿", "深蓝", "深红", "彩虹色"
@@ -59,13 +77,20 @@ def _normalize_feature_text(text: str) -> str:
 
 
 def build_character_card(child_features: str) -> CharacterCard:
-    """根据用户输入构建角色卡。"""
+    """根据用户输入构建角色卡。
+
+    该函数会尽量从用户输入中提取显式视觉词。如果某类词没有提取到，会使用保守默认值，
+    确保提示词仍然完整。
+    """
     features = _normalize_feature_text(child_features)
+
+    # 分别提取发型、颜色、服装、配饰。dict.fromkeys 会在后面用于去重并保持顺序。
     hair_terms = _collect_terms(features, HAIR_WORDS)
     color_terms = _collect_terms(features, COLOR_WORDS)
     clothes_terms = _collect_terms(features, CLOTHES_WORDS)
     accessory_terms = _collect_terms(features, ACCESSORY_WORDS)
 
+    # 根据关键词粗略判断主角类型，便于生成更明确的角色身份。
     role = "可爱的儿童绘本主角"
     if "女孩" in features or "小女孩" in features:
         role = "可爱的小女孩"
@@ -81,6 +106,7 @@ def build_character_card(child_features: str) -> CharacterCard:
     colors = "，".join(dict.fromkeys(color_terms)) or "明亮温暖的固定配色"
     style = "儿童绘本画风，温暖明亮，干净线条，柔和光线，角色设计稿，高质量，可爱但不过度复杂"
 
+    # 正向提示词用于生成角色定妆照。这里强调白色背景、全身、正对镜头，方便形成清晰角色设定。
     positive_prompt = (
         f"{style}，一个人，只有一个人，单个角色，角色定妆照，白色背景，全身，正对镜头，"
         f"{role}，用户输入特征：{features}，"
@@ -90,6 +116,7 @@ def build_character_card(child_features: str) -> CharacterCard:
         "同一张脸，同一发型，同一套服装，同一配色，不换衣服，不改变标志性配饰"
     )
 
+    # 负向提示词目前主要作为角色卡记录和未来扩展；当前工作流没有单独注入负向文本节点。
     negative_prompt = (
         "不同角色，多个人，多角色，双人，群像，换衣服，改变服装颜色，改变发色，额外复杂配饰，成人化，性感，恐怖，血腥，暴力，"
         "阴暗惊悚，多个主角，复杂背景，遮挡身体，裁切身体，低质量，变形，坏手，坏脸，文字，水印，logo"
@@ -110,7 +137,16 @@ def build_character_card(child_features: str) -> CharacterCard:
 
 
 def build_story_page_prompt(card: CharacterCard, story_action: str, story_scene: str) -> tuple[str, str]:
-    """把角色卡和本页剧情合成为绘本页正负提示词。"""
+    """把角色卡和本页剧情合成为绘本页正负提示词。
+
+    Args:
+        card: 当前绘本会话的角色卡。
+        story_action: LLM 输出的中文动作提示词。
+        story_scene: LLM 输出的中文场景提示词。
+
+    Returns:
+        tuple[str, str]: `(positive, negative)`。当前正式工作流只注入 positive。
+    """
     positive = (
         "儿童绘本页面插画，温暖明亮，高质量，干净线条，柔和光线，色彩柔和，故事感强，儿童友好，"
         "画面中只有一个主角，单个角色，不出现第二个主角，"
