@@ -1,438 +1,332 @@
-# 儿童绘本生成系统技术文档
+# 儿童互动绘本生成系统技术文档
 
 ## 1. 项目概述
 
-本项目是一个儿童互动绘本生成系统，主要代码位于 `src` 目录。系统通过 FastAPI 提供后端接口，Vue 3 实现前端交互，SQLite 保存故事分支，大语言模型生成剧情文本，ComfyUI 工作流负责绘本图片生成。目前 `src/main.py` 中图片接口使用占位图调试模式，真实 ComfyUI 生成逻辑保留在注释中。
+本项目是一个可交互儿童绘本生成系统。用户输入主角特征和故事主题后，后端调用大语言模型生成剧情、旁白、主角台词和下一步选项；用户的每次选择都会形成新的剧情节点，最终组成“命运之树”。当用户请求渲染图片时，系统使用角色卡机制固定主角形象，并调用 ComfyUI 的 Z-Image 工作流生成绘本页。
 
-## 2. 目录与模块
+## 2. 模块职责
 
 | 文件 | 作用 |
 | --- | --- |
-| `src/main.py` | 后端入口，定义 API、请求模型、静态文件服务。 |
-| `src/database.py` | SQLite 数据库初始化、故事和页面节点读写、上下文重建。 |
-| `src/llm_engine.py` | 调用大语言模型生成剧情、台词并审核内容安全。 |
-| `src/image_engine.py` | 调用 ComfyUI 三阶段工作流生成绘本图片。 |
+| `src/main.py` | FastAPI 入口，定义接口、请求模型、图片保存与静态资源服务。 |
+| `src/database.py` | SQLite 数据库读写，保存绘本、节点、图片 URL 和分支关系。 |
+| `src/llm_engine.py` | 调用大模型生成剧情 JSON、台词，并做儿童内容安全审核。 |
+| `src/character_card.py` | 正式角色卡模块，提取主角发型、服装、颜色、配饰，生成一致性提示词。 |
+| `src/image_engine.py` | 绘图模块，加载 ComfyUI 工作流，注入提示词和随机种子，下载图片。 |
 | `src/config.py` | 大模型和 ComfyUI 配置。 |
-| `src/index.html` | Vue 3 前端页面，包含创建故事、阅读故事、命运之树。 |
-| `src/workflow_stage1_base.json` | ComfyUI 阶段 1：生成主角定妆照。 |
-| `src/workflow_stage2_pose.json` | ComfyUI 阶段 2：生成动作姿态图。 |
-| `src/workflow_stage3_final.json` | ComfyUI 阶段 3：生成最终绘本图。 |
+| `src/index.html` | 前端页面，负责创建故事、选择剧情、请求图片和展示命运之树。 |
+| `src/TEST_workflow_character_base.json` | 当前正式使用的角色定妆照工作流。 |
+| `src/TEST_workflow_story_page.json` | 当前正式使用的绘本页工作流。 |
 
-## 3. 系统流程
+旧版 `workflow_stage1_base.json`、`workflow_stage2_pose.json`、`workflow_stage3_final.json` 当前正式流程不再调用。
 
-1. 用户选择故事主题并输入主角特征。
-2. 前端调用 `/api/init_story_text` 创建新故事。
-3. 后端调用大模型生成开局旁白、台词、绘图提示词和选项。
-4. 后端将故事信息和根节点写入 SQLite。
-5. 前端调用 `/api/render_image` 获取图片。
-6. 用户选择下一步，前端调用 `/api/next_turn_text`。
-7. 后端根据父节点回溯上下文，再生成新剧情节点。
-8. 所有节点形成“命运之树”，前端通过 `/api/get_timeline/{session_id}` 展示分支。
+## 3. 配置变量 `src/config.py`
 
-## 4. 后端接口 `src/main.py`
+| 变量 | 作用 |
+| --- | --- |
+| `LLM_API_KEY` | 大语言模型 API Key。 |
+| `LLM_BASE_URL` | OpenAI 兼容 API 地址。 |
+| `LLM_MODEL_NAME` | 大模型名称。 |
+| `COMFYUI_SERVER_ADDRESS` | ComfyUI 服务地址，默认 `http://127.0.0.1:8188`。 |
+| `COMFYUI_INPUT_DIR` | ComfyUI 输入目录，当前主要保留兼容旧逻辑。 |
 
-### 4.1 全局变量
+## 4. API 接口 `src/main.py`
 
-| 名称 | 类型 | 作用 |
-| --- | --- | --- |
-| `app` | `FastAPI` | FastAPI 应用实例。 |
-| `IMAGE_DIR` | `str` | 图片目录，值为 `images`。 |
+### 全局变量
 
-启动时执行 `init_db()` 初始化数据库，并创建 `images` 目录。
+| 名称 | 作用 |
+| --- | --- |
+| `app` | FastAPI 应用实例。 |
+| `IMAGE_DIR` | 最终图片目录，值为 `images`。 |
 
-### 4.2 请求模型
+启动顺序：
+
+```text
+加载 main.py -> 创建 app -> init_db() -> 创建 images 目录 -> 注册接口 -> 挂载静态文件
+```
+
+### 请求模型
 
 | 模型 | 字段 | 作用 |
 | --- | --- | --- |
-| `InitRequest` | `child_features: str` | 主角特征。 |
-| `InitRequest` | `theme: str` | 故事主题。 |
-| `NextTurnRequest` | `session_id: str` | 当前故事会话 ID。 |
-| `NextTurnRequest` | `parent_page_id: int` | 当前父节点 ID。 |
-| `NextTurnRequest` | `user_choice: str` | 用户选择或自定义输入。 |
-| `RenderRequest` | `page_id: int` | 需要渲染图片的页面节点 ID。 |
+| `InitRequest` | `child_features` | 主角特征。 |
+| `InitRequest` | `theme` | 故事主题。 |
+| `NextTurnRequest` | `session_id` | 绘本会话 ID。 |
+| `NextTurnRequest` | `parent_page_id` | 当前父节点 ID。 |
+| `NextTurnRequest` | `user_choice` | 用户选择。 |
+| `RenderRequest` | `page_id` | 需要生成图片的节点 ID。 |
 
-### 4.3 `POST /api/init_story_text`
+### `POST /api/init_story_text`
 
-创建新故事并生成开局剧情。
+作用：创建新绘本并生成开局文本。
 
-请求示例：
-
-```json
-{
-  "child_features": "a cute boy, wearing a yellow hat",
-  "theme": "魔法森林探险"
-}
-```
-
-返回示例：
+请求：
 
 ```json
-{
-  "session_id": "uuid",
-  "page_id": 1,
-  "narrator_text": "旁白",
-  "actor_dialogue": "主角台词",
-  "options": ["选项1", "选项2"]
-}
+{"child_features":"白色短发，红色斗篷的小女孩","theme":"魔法森林探险"}
 ```
 
-关键变量：
+返回：
+
+```json
+{"session_id":"uuid","page_id":1,"narrator_text":"旁白","actor_dialogue":"台词","options":["选项1","选项2"]}
+```
+
+关键变量：`session_id` 新会话 ID；`opening_context` 初始上下文；`turn_data` LLM 生成结果；`page_id` 根节点 ID。
+
+调用顺序：
+
+```text
+前端 -> init_story_text()
+  -> uuid.uuid4()
+  -> generate_script_turn(child_features, opening_context, "开始冒险")
+  -> create_storybook()
+  -> add_page_node()
+  -> 返回开局文本
+```
+
+### `POST /api/next_turn_text`
+
+作用：根据用户选择生成下一幕剧情。
+
+请求：
+
+```json
+{"session_id":"uuid","parent_page_id":1,"user_choice":"走进发光的小路"}
+```
+
+返回：
+
+```json
+{"page_id":2,"narrator_text":"旁白","actor_dialogue":"台词","options":["选项1","选项2"]}
+```
+
+关键变量：`features` 主角特征；`memory_list` 上下文记忆；`current_path` 当前分支路径；`depth` 新节点深度。
+
+调用顺序：
+
+```text
+前端 -> next_turn_text()
+  -> rebuild_llm_context(parent_page_id)
+  -> generate_script_turn(features, memory_list, user_choice)
+  -> add_page_node()
+  -> 返回新节点文本
+```
+
+### `POST /api/render_image`
+
+作用：为指定剧情节点生成绘本图片。
+
+请求：
+
+```json
+{"page_id":2}
+```
+
+返回：
+
+```json
+{"image_url":"/images/node_2.png"}
+```
+
+关键变量：`page` 当前节点；`book` 当前绘本；`img_path` 临时图片路径；`final_img_path` 最终图片路径；`image_url` 前端访问路径。
+
+调用顺序：
+
+```text
+前端 -> render_image()
+  -> get_page(page_id)
+  -> get_storybook_info(session_id)
+  -> generate_full_story_page(session_id, features, action_prompt, scene_prompt)
+  -> 重命名 final_storybook_page.png 为 images/node_{page_id}.png
+  -> update_page_image()
+  -> 返回 image_url
+```
+
+### `GET /api/get_timeline/{session_id}`
+
+作用：获取当前绘本所有剧情节点，用于展示命运之树。
+
+调用顺序：
+
+```text
+前端 -> get_timeline()
+  -> get_storybook_info(session_id)
+  -> get_all_nodes(session_id)
+  -> 返回 theme、features、nodes
+```
+
+## 5. 数据库 `src/database.py`
+
+### 全局变量
 
 | 变量 | 作用 |
-| --- | --- |
-| `session_id` | 使用 `uuid.uuid4()` 创建的新故事 ID。 |
-| `opening_context` | 初始上下文，包含故事主题。 |
-| `turn_data` | 大模型生成的剧情数据。 |
-| `page_id` | 保存到数据库后的根节点 ID。 |
-
-### 4.4 `POST /api/next_turn_text`
-
-根据用户选择生成下一幕剧情。
-
-请求示例：
-
-```json
-{
-  "session_id": "uuid",
-  "parent_page_id": 1,
-  "user_choice": "走进发光的小路"
-}
-```
-
-返回示例：
-
-```json
-{
-  "page_id": 2,
-  "narrator_text": "下一幕旁白",
-  "actor_dialogue": "主角台词",
-  "options": ["选项1", "选项2"]
-}
-```
-
-关键变量：
-
-| 变量 | 作用 |
-| --- | --- |
-| `features` | 当前故事主角特征。 |
-| `memory_list` | 压缩后的上下文记忆。 |
-| `current_path` | 从根节点到父节点的路径。 |
-| `turn_data` | 新一轮剧情数据。 |
-| `depth` | 新节点深度。 |
-| `page_id` | 新节点 ID。 |
-
-### 4.5 `POST /api/render_image`
-
-为指定节点生成或返回图片。当前为调试模式，返回占位图。
-
-请求示例：
-
-```json
-{
-  "page_id": 2
-}
-```
-
-返回示例：
-
-```json
-{
-  "image_url": "https://placehold.co/800x400/2b2b36/00d2ff.png?text=Node+2"
-}
-```
-
-关键变量：
-
-| 变量 | 作用 |
-| --- | --- |
-| `page` | 数据库中的页面节点。 |
-| `book` | 当前故事信息。调试模式下未实际使用。 |
-| `placeholder_url` | 占位图地址。 |
-
-真实 ComfyUI 模式下，注释代码会使用 `generate_full_story_page()` 生成图片，保存为 `images/node_{page_id}.png`，并把 `/images/node_{page_id}.png` 写入数据库。
-
-### 4.6 `GET /api/get_timeline/{session_id}`
-
-获取故事的所有节点，用于前端构建命运之树。
-
-返回示例：
-
-```json
-{
-  "theme": "魔法森林探险",
-  "features": "a cute boy",
-  "nodes": []
-}
-```
-
-关键变量：
-
-| 变量 | 作用 |
-| --- | --- |
-| `book` | 故事基础信息。 |
-| `nodes` | 当前故事的全部剧情节点。 |
-
-## 5. 数据库模块 `src/database.py`
-
-### 5.1 全局变量
-
-| 名称 | 作用 |
 | --- | --- |
 | `DB_FILE` | SQLite 数据库文件名，值为 `storybook.db`。 |
 
-### 5.2 表结构
+### 表结构
 
-#### `storybooks`
+`storybooks`：`session_id` 会话 ID；`theme` 主题；`features` 主角特征；`create_time` 创建时间。
 
-| 字段 | 作用 |
+`pages`：`id` 节点 ID；`session_id` 所属会话；`parent_id` 父节点；`depth` 深度；`user_choice` 用户选择；`narrator_text` 旁白；`actor_dialogue` 台词；`action_prompt` 中文动作提示词；`scene_prompt` 中文场景提示词；`image_url` 图片地址；`options_json` 下一步选项 JSON。
+
+### 方法
+
+| 方法 | 作用 |
 | --- | --- |
-| `session_id` | 故事唯一 ID，主键。 |
-| `theme` | 故事主题。 |
-| `features` | 主角特征。 |
-| `create_time` | 创建时间。 |
+| `init_db()` | 创建两张表。 |
+| `create_storybook(session_id, theme, features)` | 新增绘本记录。 |
+| `add_page_node(...)` | 新增剧情节点，序列化 `options_list`。 |
+| `update_page_image(page_id, image_url)` | 更新节点图片 URL。 |
+| `get_page(page_id)` | 查询单个节点。 |
+| `get_storybook_info(session_id)` | 查询绘本信息。 |
+| `get_all_nodes(session_id)` | 查询所有节点，并解析 `options_json` 为 `options`。 |
+| `rebuild_llm_context(page_id)` | 沿 `parent_id` 回溯，重建 LLM 上下文。 |
 
-#### `pages`
+`rebuild_llm_context()` 顺序：
 
-| 字段 | 作用 |
-| --- | --- |
-| `id` | 页面节点自增 ID。 |
-| `session_id` | 所属故事 ID。 |
-| `parent_id` | 父节点 ID，根节点为 `0`。 |
-| `depth` | 节点深度。 |
-| `user_choice` | 用户进入该节点时的选择。 |
-| `narrator_text` | 旁白文本。 |
-| `actor_dialogue` | 主角台词。 |
-| `action_prompt` | 英文动作提示词。 |
-| `scene_prompt` | 英文场景提示词。 |
-| `image_url` | 图片地址。 |
-| `options_json` | 下一步选项的 JSON 字符串。 |
-
-### 5.3 函数
-
-| 函数 | 作用 | 关键变量 |
-| --- | --- | --- |
-| `init_db()` | 创建 `storybooks` 和 `pages` 表。 | `conn` 数据库连接；`cursor` SQL 游标。 |
-| `create_storybook(session_id, theme, features)` | 新增故事记录。 | `create_time` 创建时间。 |
-| `add_page_node(...)` | 新增剧情节点。 | `options_str` 选项 JSON 字符串；`new_page_id` 新节点 ID。 |
-| `update_page_image(page_id, image_url)` | 更新节点图片。 | `page_id` 节点 ID；`image_url` 图片地址。 |
-| `get_page(page_id)` | 查询单个节点。 | `page` 查询结果。 |
-| `get_storybook_info(session_id)` | 查询故事信息。 | `book` 查询结果。 |
-| `get_all_nodes(session_id)` | 查询全部节点并解析选项。 | `nodes` 原始节点；`result` 返回列表；`node_dict` 节点字典。 |
-| `rebuild_llm_context(page_id)` | 从当前节点回溯，重建大模型上下文。 | `path` 节点路径；`current_id` 当前回溯 ID；`memory_list` 上下文记忆。 |
-
-`rebuild_llm_context()` 返回 `(features, memory_list, path)`；若找不到路径，返回 `(None, [], [])`。
-
-## 6. 大模型模块 `src/llm_engine.py`
-
-### 6.1 全局对象
-
-| 名称 | 作用 |
-| --- | --- |
-| `client` | OpenAI 兼容客户端，使用 `LLM_API_KEY`、`LLM_BASE_URL`。 |
-
-### 6.2 `chat_with_agent(system_prompt, user_message, json_mode=False)`
-
-封装一次大模型对话。
-
-| 参数/变量 | 作用 |
-| --- | --- |
-| `system_prompt` | 系统提示词。 |
-| `user_message` | 用户消息。 |
-| `json_mode` | 是否要求返回 JSON 对象。 |
-| `messages` | 发送给模型的消息数组。 |
-| `kwargs` | 模型调用参数。 |
-| `response` | 模型响应。 |
-| `result` | 返回文本。 |
-
-### 6.3 `generate_script_turn(child_features, context_history, user_choice, max_retries=3)`
-
-生成一轮剧情并审核安全。
-
-期望返回结构：
-
-```json
-{
-  "narrator_text": "旁白",
-  "story_scene": "英文场景提示词",
-  "story_action": "英文动作提示词",
-  "options": ["选项1", "选项2"],
-  "actor_dialogue": "主角台词"
-}
+```text
+page_id -> 查询当前节点 -> 沿 parent_id 回溯到根节点 -> 反转路径
+  -> 查询 storybooks -> 构造 memory_list -> 保留全局设定和最近 3 条剧情
+  -> 返回 features、memory_list、current_path
 ```
 
-关键变量：
+## 6. 大模型 `src/llm_engine.py`
 
-| 变量 | 作用 |
-| --- | --- |
-| `director_sys` | 导演角色提示词，生成 JSON 剧情。 |
-| `actor_sys` | 演员角色提示词，生成第一人称台词。 |
-| `critic_sys` | 评论家提示词，审核儿童内容安全。 |
-| `critic_feedback` | 上轮审核或 JSON 错误反馈。 |
-| `attempt` | 当前尝试次数。 |
-| `director_user` | 发给导演模型的上下文。 |
-| `director_response` | 导演模型原始输出。 |
-| `data` | 解析后的剧情字典。 |
-| `narrator_text` | 旁白。 |
-| `story_scene` | 场景提示词。 |
-| `actor_user` | 发给演员模型的内容。 |
-| `actor_dialogue` | 主角台词。 |
-| `critic_user` | 发给审核模型的内容。 |
-| `critic_verdict` | 审核结果，包含 `PASS` 表示通过。 |
+`client` 是 OpenAI 兼容客户端。
 
-## 7. 图片模块 `src/image_engine.py`
+`chat_with_agent(system_prompt, user_message, json_mode=False)`：构造消息、调用模型、返回文本。`json_mode=True` 时要求返回 JSON 对象。
 
-### 7.1 `log(step, message)`
+`generate_script_turn(child_features, context_history, user_choice, max_retries=3)`：生成一轮剧情。
 
-打印带时间戳的日志。
+关键变量：`director_sys` 导演提示词，要求输出中文 `story_scene` 和 `story_action`；`actor_sys` 生成第一人称台词；`critic_sys` 审核儿童安全；`critic_feedback` 保存失败反馈；`data` 是剧情 JSON。
 
-| 参数 | 作用 |
-| --- | --- |
-| `step` | 当前步骤。 |
-| `message` | 日志信息。 |
-
-### 7.2 `run_comfyui_task(workflow_json, output_name, task_name="未知任务")`
-
-提交 ComfyUI 工作流并下载输出图片。
-
-| 参数/变量 | 作用 |
-| --- | --- |
-| `workflow_json` | ComfyUI 工作流对象。 |
-| `output_name` | 下载后的图片路径。 |
-| `task_name` | 日志中的任务名。 |
-| `res` | `/prompt` 接口响应。 |
-| `prompt_id` | ComfyUI 任务 ID。 |
-| `history` | 任务历史。 |
-| `outputs` | 输出节点集合。 |
-| `img_info` | 图片文件信息。 |
-| `img_url` | 图片下载 URL。 |
-| `img_res` | 图片响应内容。 |
-
-### 7.3 `generate_full_story_page(session_id, child_features, story_action, story_scene)`
-
-三阶段生成最终绘本图。
-
-| 参数/变量 | 作用 |
-| --- | --- |
-| `session_id` | 故事 ID，用于区分定妆照。 |
-| `child_features` | 主角特征。 |
-| `story_action` | 动作提示词。 |
-| `story_scene` | 场景提示词。 |
-| `base_image_name` | 定妆照文件名 `base_{session_id}.png`。 |
-| `wf1` | 阶段 1 工作流。 |
-| `wf2` | 阶段 2 工作流。 |
-| `wf3` | 阶段 3 工作流。 |
-
-阶段说明：
-
-1. 阶段 1 使用 `workflow_stage1_base.json` 生成角色定妆照。
-2. 阶段 2 使用 `workflow_stage2_pose.json` 生成动作姿态图 `temp_pose.png`。
-3. 阶段 3 使用 `workflow_stage3_final.json` 结合定妆照、姿态图和场景提示词生成 `final_storybook_page.png`。
-
-## 8. 配置 `src/config.py`
-
-| 配置项 | 作用 |
-| --- | --- |
-| `LLM_API_KEY` | 大模型 API Key。建议改为环境变量。 |
-| `LLM_BASE_URL` | 大模型接口地址。 |
-| `LLM_MODEL_NAME` | 模型名称。 |
-| `COMFYUI_SERVER_ADDRESS` | ComfyUI 服务地址。 |
-| `COMFYUI_INPUT_DIR` | ComfyUI 输入目录。 |
-
-## 9. 前端 `src/index.html`
-
-### 9.1 页面状态
-
-| 状态 | 作用 |
-| --- | --- |
-| `setup` | 创建故事页面。 |
-| `loading` | 加载页面。 |
-| `story` | 阅读和选择页面。 |
-| `timeline` | 命运之树页面。 |
-
-### 9.2 核心变量
-
-| 变量 | 作用 |
-| --- | --- |
-| `currentScreen` | 当前界面状态。 |
-| `loadingText` | 加载提示文字。 |
-| `isDrawing` | 图片是否生成中。 |
-| `sessionId` | 当前故事 ID。 |
-| `currentPageId` | 当前节点 ID。 |
-| `setupData` | 表单数据，含 `theme` 和 `features`。 |
-| `customChoice` | 用户自定义选择。 |
-| `currentStory` | 当前剧情，含旁白、台词、选项。 |
-| `currentImage` | 当前图片 URL。 |
-| `timelineTree` | 树形时间线根节点。 |
-| `flatNodes` | 扁平节点列表，便于跳转查找。 |
-
-### 9.3 前端函数
-
-| 函数 | 作用 | 关键变量 |
-| --- | --- | --- |
-| `callApi(url, data)` | 发送 POST 请求。 | `res` 响应；`result` JSON 结果。 |
-| `processStoryData(data)` | 更新当前故事并触发图片请求。 | `data` 后端剧情数据。 |
-| `fetchImage(pageId)` | 调用 `/api/render_image`。 | `pageId` 节点 ID。 |
-| `startGame()` | 创建新故事。 | `setupData` 初始化数据。 |
-| `makeChoice(choiceText)` | 生成下一幕。 | `choiceText` 用户选择。 |
-| `viewTimeline()` | 加载命运之树。 | `treeMap` 节点映射；`rootNode` 根节点。 |
-| `jumpToNode(id)` | 跳转到历史节点。 | `targetNode` 目标节点。 |
-| `handleImageError()` | 图片加载失败兜底。 | `currentImage` 兜底占位图。 |
-
-### 9.4 `TreeNodeComponent`
-
-递归显示时间线节点。
-
-| 名称 | 作用 |
-| --- | --- |
-| `node` | 当前节点数据。 |
-| `currentPageId` | 当前激活节点 ID。 |
-| `jump(id)` | 点击节点后向父组件发送跳转事件。 |
-
-## 10. 工作流 JSON
-
-| 文件 | 关键节点 | 作用 |
-| --- | --- | --- |
-| `workflow_stage1_base.json` | `1` 加载模型，`3` 正向提示词，`4` 负向提示词，`7` 预览图 | 生成角色定妆照。 |
-| `workflow_stage2_pose.json` | `1` 动作提示词，`8` OpenPose 预处理，`10` 保存图像 | 生成姿态参考图。 |
-| `workflow_stage3_final.json` | `6` 场景提示词，`8` 角色图，`14` 姿态图，`13` IPAdapter，`16` ControlNet，`20` 预览图 | 生成最终绘本图。 |
-
-## 11. 重要数据结构
-
-### 剧情节点
+返回结构：
 
 ```json
-{
-  "id": 1,
-  "session_id": "uuid",
-  "parent_id": 0,
-  "depth": 0,
-  "user_choice": "开始冒险",
-  "narrator_text": "旁白",
-  "actor_dialogue": "台词",
-  "action_prompt": "英文动作提示词",
-  "scene_prompt": "英文场景提示词",
-  "image_url": "图片地址",
-  "options_json": "选项JSON字符串",
-  "options": ["选项1", "选项2"]
-}
+{"narrator_text":"旁白","story_scene":"中文场景提示词","story_action":"中文动作提示词","options":["选项1","选项2"],"actor_dialogue":"主角台词"}
 ```
 
-### 大模型剧情结果
+调用顺序：
 
-```json
-{
-  "narrator_text": "绘本旁白",
-  "story_scene": "English scene prompt",
-  "story_action": "English action prompt",
-  "options": ["下一步选项1", "下一步选项2"],
-  "actor_dialogue": "主角台词"
-}
+```text
+generate_script_turn()
+  -> chat_with_agent(director_sys, director_user, json_mode=True)
+  -> json.loads(director_response)
+  -> chat_with_agent(actor_sys, actor_user)
+  -> chat_with_agent(critic_sys, critic_user)
+  -> PASS 返回 data，REJECT 带反馈重试
 ```
 
-## 12. 改进建议
+## 7. 角色卡 `src/character_card.py`
 
-1. `LLM_API_KEY` 不应硬编码，建议改为环境变量读取。
-2. `/api/render_image` 当前为调试占位图，正式使用需恢复 ComfyUI 逻辑。
-3. `except:` 建议改为捕获具体异常。
-4. `/api/next_turn_text` 建议校验 `parent_page_id` 是否属于传入 `session_id`。
-5. 可为 `pages.session_id` 和 `pages.parent_id` 建索引，提高查询效率。
+`CharacterCard` 字段：`raw_features` 原始特征；`role` 角色类型；`hair` 发型；`face` 脸部；`clothes` 服装；`accessories` 配饰；`colors` 主色；`style` 风格；`positive_prompt` 正向提示词；`negative_prompt` 负向提示词。
+
+关键词变量：`COLOR_WORDS` 颜色；`HAIR_WORDS` 发型；`CLOTHES_WORDS` 服装；`ACCESSORY_WORDS` 配饰。
+
+方法：`_normalize_feature_text()` 规范化输入；`_collect_terms()` 提取关键词；`build_character_card()` 构建角色卡；`build_story_page_prompt()` 合成绘本页提示词；`save_character_card()` 保存角色卡；`load_character_card()` 读取角色卡。
+
+调用顺序：
+
+```text
+build_character_card(child_features)
+  -> 规范化文本 -> 提取发型/颜色/服装/配饰
+  -> 判断 role -> 生成角色字段
+  -> 拼接 positive_prompt 和 negative_prompt
+  -> 返回 CharacterCard
+```
+
+```text
+build_story_page_prompt(card, story_action, story_scene)
+  -> 读取角色卡固定设定
+  -> 拼接中文动作和中文场景
+  -> 返回 positive、negative
+```
+
+## 8. 绘图 `src/image_engine.py`
+
+`ROOT_DIR` 指向 `src` 目录，用于加载工作流。
+
+`load_workflow(filename)` 读取工作流 JSON。
+
+`run_comfyui_task(workflow_json, output_name, task_name, preferred_node_id)` 调用 ComfyUI。
+
+调用顺序：
+
+```text
+POST /prompt -> 获取 prompt_id -> 循环 GET /history/{prompt_id}
+  -> 找到 preferred_node_id 或其它图片输出节点
+  -> GET /view 下载图片 -> 写入 output_name -> 返回路径
+```
+
+`generate_full_story_page(session_id, child_features, story_action, story_scene)` 是正式图片生成入口。
+
+关键变量：`card` 角色卡；`base_image_name` 定妆照；`wf1` 角色工作流；`wf2` 绘本页工作流；`seed` 随机种子；`positive` 最终正向提示词。
+
+调用顺序：
+
+```text
+generate_full_story_page()
+  -> build_character_card(child_features)
+  -> save_character_card(card, character_card_{session_id}.json)
+  -> 若 base_{session_id}.png 不存在：
+      -> load_workflow("TEST_workflow_character_base.json")
+      -> 注入 card.positive_prompt 到节点 4
+      -> 设置节点 7、9 的 noise_seed
+      -> run_comfyui_task(..., preferred_node_id="11")
+  -> build_story_page_prompt(card, story_action, story_scene)
+  -> load_workflow("TEST_workflow_story_page.json")
+  -> 注入 positive 到节点 4
+  -> 设置节点 7、9 的 noise_seed
+  -> run_comfyui_task(..., preferred_node_id="14")
+  -> 返回 final_storybook_page.png
+```
+
+## 9. 完整流程
+
+创建新绘本：
+
+```text
+输入主角特征和主题 -> /api/init_story_text -> generate_script_turn()
+  -> create_storybook() -> add_page_node() -> 前端显示开局
+```
+
+生成下一幕：
+
+```text
+点击选项 -> /api/next_turn_text -> rebuild_llm_context()
+  -> generate_script_turn() -> add_page_node() -> 前端显示新节点
+```
+
+生成图片：
+
+```text
+请求渲染 page_id -> /api/render_image -> get_page() -> get_storybook_info()
+  -> generate_full_story_page() -> 生成/复用定妆照 -> 生成绘本页
+  -> 保存为 images/node_{page_id}.png -> update_page_image() -> 前端显示图片
+```
+
+获取命运之树：
+
+```text
+/api/get_timeline/{session_id} -> get_storybook_info() -> get_all_nodes() -> 返回所有节点
+```
+
+## 10. 生成文件
+
+| 文件 | 作用 |
+| --- | --- |
+| `storybook.db` | SQLite 数据库。 |
+| `character_card_{session_id}.json` | 角色卡快照。 |
+| `base_{session_id}.png` | 会话角色定妆照。 |
+| `final_storybook_page.png` | 临时最终绘本图。 |
+| `images/node_{page_id}.png` | 前端访问的最终节点图片。 |
+
+## 11. 注意事项
+
+1. 正式绘图只调用 `TEST_workflow_character_base.json` 和 `TEST_workflow_story_page.json`。
+2. LLM 输出的 `story_scene` 和 `story_action` 是中文，以适配 Z-Image。
+3. 主角形象由 `character_card.py` 统一注入，保证同一发型、服装、配色。
+4. `base_{session_id}.png` 已存在时会跳过定妆照生成。
+5. 重复渲染同一节点会覆盖 `images/node_{page_id}.png`。
+6. 生产环境建议把 `config.py` 中的 API Key 改为环境变量。

@@ -167,7 +167,7 @@ def generate_test_full_story_page(
 
     output_path = TEST_ASSET_DIR / f"TEST_final_storybook_page_{session_id}_{page_id}.png"
     log("TEST阶段2 Prompt", positive)
-    result = run_comfyui_task(workflow, output_path, "TEST阶段2:最终绘本图", preferred_node_id="16")
+    result = run_comfyui_task(workflow, output_path, "TEST阶段2:最终绘本图", preferred_node_id="14")
     if not result:
         raise RuntimeError("TEST最终绘本图生成失败")
     return result
