@@ -123,6 +123,41 @@
             margin-bottom: 22px;
         }
 
+        .avatar-builder.expanded {
+            max-height: 620px;
+            overflow-y: auto;
+        }
+
+        .avatar-builder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .avatar-builder-header h2 {
+            margin: 0;
+            text-align: left;
+        }
+
+        .toggle-builder-btn {
+            border: none;
+            border-radius: 16px;
+            padding: 10px 16px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #D9734E;
+            white-space: nowrap;
+        }
+
+        .toggle-builder-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #D9734E;
+        }
+
         .avatar-preview {
             display: flex;
             gap: 18px;
@@ -386,30 +421,37 @@
                         <option value="深海寻宝奇遇">🌊 深海寻宝奇遇</option>
                     </select>
                 </div>
-                <div class="avatar-builder">
-                    <h2 style="margin-top: 0;">🧸 捏一捏你的主角</h2>
+                <div :class="['avatar-builder', { expanded: isAvatarBuilderOpen }]">
+                    <div class="avatar-builder-header">
+                        <h2>🧸 捏一捏你的主角</h2>
+                        <button type="button" class="toggle-builder-btn" @click="isAvatarBuilderOpen = !isAvatarBuilderOpen">
+                            {{ isAvatarBuilderOpen ? '收起选项' : '展开捏人' }}
+                        </button>
+                    </div>
                     <div class="avatar-preview">
                         <div class="avatar-face">{{ avatarFaceIcon }}</div>
                         <div class="avatar-summary">
-                            <strong>当前角色：</strong>{{ generatedFeatureText }}
+                            <strong>主要特征：</strong>{{ avatarMainSummary }}
                             <div style="font-size: 13px; color: #888; margin-top: 4px;">
-                                下面的选择会自动填入“主角特征”，也可以继续手动修改。
+                                {{ isAvatarBuilderOpen ? '下面的选择会自动填入“主角特征”，也可以继续手动修改。' : '点击“展开捏人”可以细选脸部、发型、服装、配饰和画风。' }}
                             </div>
                         </div>
                     </div>
 
-                    <div class="builder-section" v-for="group in avatarOptionGroups" :key="group.key">
-                        <div class="builder-title">{{ group.icon }} {{ group.label }}</div>
-                        <div class="option-grid">
-                            <button
-                                v-for="option in group.options"
-                                :key="option.value"
-                                type="button"
-                                :class="['option-pill', { active: avatarChoices[group.key] === option.value }]"
-                                @click="selectAvatarOption(group.key, option.value)"
-                            >
-                                {{ option.label }}
-                            </button>
+                    <div v-if="isAvatarBuilderOpen">
+                        <div class="builder-section" v-for="group in avatarOptionGroups" :key="group.key">
+                            <div class="builder-title">{{ group.icon }} {{ group.label }}</div>
+                            <div class="option-grid">
+                                <button
+                                    v-for="option in group.options"
+                                    :key="option.value"
+                                    type="button"
+                                    :class="['option-pill', { active: avatarChoices[group.key] === option.value }]"
+                                    @click="selectAvatarOption(group.key, option.value)"
+                                >
+                                    {{ option.label }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -539,6 +581,7 @@
                 const currentScreen = ref('setup');
                 const loadingText = ref('加载中...');
                 const isDrawing = ref(false);
+                const isAvatarBuilderOpen = ref(false);
 
                 const sessionId = ref('');
                 const currentPageId = ref(0);
@@ -546,10 +589,15 @@
                 const setupData = reactive({ theme: '魔法森林探险', features: '' });
                 const avatarChoices = reactive({
                     role: '小女孩',
+                    body: '圆脸，大眼睛，温柔微笑',
                     hair: '白色短发',
-                    clothes: '红色斗篷，浅黄色连衣裙',
+                    mainColor: '红色，浅黄色，棕色',
+                    top: '红色斗篷',
+                    bottom: '浅黄色连衣裙',
+                    shoes: '棕色小靴子',
                     accessory: '星星发卡',
-                    shoes: '棕色小靴子'
+                    prop: '不携带额外道具',
+                    style: '儿童绘本画风，温暖明亮，干净线条，柔和光线'
                 });
                 const avatarOptionGroups = [
                     {
@@ -560,7 +608,21 @@
                             { label: '小女孩', value: '小女孩' },
                             { label: '小男孩', value: '小男孩' },
                             { label: '小兔子', value: '拟人化的小兔子' },
-                            { label: '小狐狸', value: '拟人化的小狐狸' }
+                            { label: '小狐狸', value: '拟人化的小狐狸' },
+                            { label: '小猫咪', value: '拟人化的小猫咪' },
+                            { label: '小熊', value: '拟人化的小熊' }
+                        ]
+                    },
+                    {
+                        key: 'body',
+                        label: '脸部感觉',
+                        icon: '😊',
+                        options: [
+                            { label: '圆脸大眼睛', value: '圆脸，大眼睛，温柔微笑' },
+                            { label: '苹果脸', value: '苹果脸，亮晶晶的大眼睛，开心微笑' },
+                            { label: '小虎牙笑', value: '圆脸，大眼睛，露出小虎牙的调皮笑容' },
+                            { label: '安静乖巧', value: '圆脸，清澈眼睛，安静乖巧的微笑' },
+                            { label: '勇敢自信', value: '圆脸，大眼睛，勇敢自信的表情' }
                         ]
                     },
                     {
@@ -572,18 +634,49 @@
                             { label: '黑色短发', value: '黑色短发' },
                             { label: '棕色卷发', value: '棕色卷发' },
                             { label: '金色长发', value: '金色长发' },
-                            { label: '双马尾', value: '黑色双马尾' }
+                            { label: '黑色双马尾', value: '黑色双马尾' },
+                            { label: '棕色马尾', value: '棕色马尾' },
+                            { label: '红色丸子头', value: '红色丸子头' },
+                            { label: '浅蓝色长发', value: '浅蓝色长发' }
                         ]
                     },
                     {
-                        key: 'clothes',
-                        label: '固定服装',
+                        key: 'mainColor',
+                        label: '固定主色',
+                        icon: '🎨',
+                        options: [
+                            { label: '红黄棕', value: '红色，浅黄色，棕色' },
+                            { label: '蓝白棕', value: '蓝色，白色，棕色' },
+                            { label: '绿黄白', value: '绿色，黄色，白色' },
+                            { label: '粉白金', value: '粉色，白色，金色' },
+                            { label: '紫银白', value: '紫色，银色，白色' },
+                            { label: '彩虹色', value: '彩虹色，白色，金色' }
+                        ]
+                    },
+                    {
+                        key: 'top',
+                        label: '上衣/外套',
+                        icon: '🧥',
+                        options: [
+                            { label: '红色斗篷', value: '红色斗篷' },
+                            { label: '蓝色外套', value: '蓝色外套，白色衬衫' },
+                            { label: '黄色雨衣', value: '黄色雨衣' },
+                            { label: '绿色毛衣', value: '绿色毛衣' },
+                            { label: '粉色小披肩', value: '粉色小披肩' },
+                            { label: '紫色卫衣', value: '紫色卫衣' }
+                        ]
+                    },
+                    {
+                        key: 'bottom',
+                        label: '下装/裙装',
                         icon: '👗',
                         options: [
-                            { label: '红斗篷黄裙', value: '红色斗篷，浅黄色连衣裙' },
-                            { label: '蓝外套短裤', value: '蓝色外套，白色衬衫，棕色短裤' },
-                            { label: '绿色背带裤', value: '绿色背带裤，黄色衬衫' },
-                            { label: '粉色连衣裙', value: '粉色连衣裙，白色小围巾' }
+                            { label: '浅黄连衣裙', value: '浅黄色连衣裙' },
+                            { label: '棕色短裤', value: '棕色短裤' },
+                            { label: '绿色背带裤', value: '绿色背带裤' },
+                            { label: '粉色连衣裙', value: '粉色连衣裙' },
+                            { label: '蓝色长裤', value: '蓝色长裤' },
+                            { label: '彩虹小裙子', value: '彩虹色小裙子' }
                         ]
                     },
                     {
@@ -595,7 +688,23 @@
                             { label: '圆框眼镜', value: '圆框眼镜' },
                             { label: '小书包', value: '小书包' },
                             { label: '彩色围巾', value: '彩色围巾' },
+                            { label: '红色帽子', value: '红色帽子' },
+                            { label: '白色手套', value: '白色手套' },
+                            { label: '月亮徽章', value: '月亮徽章' },
                             { label: '无额外配饰', value: '不添加额外复杂配饰' }
+                        ]
+                    },
+                    {
+                        key: 'prop',
+                        label: '随身小道具',
+                        icon: '🎒',
+                        options: [
+                            { label: '无道具', value: '不携带额外道具' },
+                            { label: '魔法小灯', value: '手里拿着小小的魔法灯' },
+                            { label: '故事书', value: '抱着一本小故事书' },
+                            { label: '星星魔杖', value: '拿着星星形状的小魔杖' },
+                            { label: '花篮', value: '提着小花篮' },
+                            { label: '贝壳项链', value: '戴着贝壳项链' }
                         ]
                     },
                     {
@@ -606,7 +715,20 @@
                             { label: '棕色小靴子', value: '棕色小靴子' },
                             { label: '红色运动鞋', value: '红色运动鞋' },
                             { label: '蓝色雨靴', value: '蓝色雨靴' },
-                            { label: '白色小鞋子', value: '白色小鞋子' }
+                            { label: '白色小鞋子', value: '白色小鞋子' },
+                            { label: '金色小靴子', value: '金色小靴子' },
+                            { label: '绿色布鞋', value: '绿色布鞋' }
+                        ]
+                    },
+                    {
+                        key: 'style',
+                        label: '画风补充',
+                        icon: '🖌️',
+                        options: [
+                            { label: '温暖明亮', value: '儿童绘本画风，温暖明亮，干净线条，柔和光线' },
+                            { label: '软萌可爱', value: '儿童绘本画风，软萌可爱，圆润造型，柔和光线' },
+                            { label: '梦幻童话', value: '儿童绘本画风，梦幻童话，柔和光线，发光细节' },
+                            { label: '清新水彩', value: '儿童绘本画风，清新水彩感，浅色背景，干净线条' }
                         ]
                     }
                 ];
@@ -621,15 +743,32 @@
                 const generatedFeatureText = computed(() => {
                     const accessoryText = avatarChoices.accessory === '不添加额外复杂配饰'
                         ? '不添加额外复杂配饰'
-                        : `戴${avatarChoices.accessory}`;
-                    return `${avatarChoices.hair}，${avatarChoices.clothes}，${avatarChoices.role}，${accessoryText}，穿${avatarChoices.shoes}`;
+                        : `固定配饰：${avatarChoices.accessory}`;
+                    const propText = avatarChoices.prop === '不携带额外道具'
+                        ? '不携带额外道具'
+                        : `随身道具：${avatarChoices.prop}`;
+                    return [
+                        avatarChoices.role,
+                        `固定外貌：${avatarChoices.hair}，${avatarChoices.body}`,
+                        `固定服装：${avatarChoices.top}，${avatarChoices.bottom}，${avatarChoices.shoes}`,
+                        `固定主色：${avatarChoices.mainColor}`,
+                        accessoryText,
+                        propText,
+                        avatarChoices.style
+                    ].join('，');
                 });
 
                 const avatarFaceIcon = computed(() => {
                     if (avatarChoices.role.includes('男孩')) return '👦';
                     if (avatarChoices.role.includes('兔子')) return '🐰';
                     if (avatarChoices.role.includes('狐狸')) return '🦊';
+                    if (avatarChoices.role.includes('猫咪')) return '🐱';
+                    if (avatarChoices.role.includes('熊')) return '🐻';
                     return '👧';
+                });
+
+                const avatarMainSummary = computed(() => {
+                    return `${avatarChoices.role}｜${avatarChoices.hair}｜${avatarChoices.top} + ${avatarChoices.bottom}｜${avatarChoices.accessory}｜${avatarChoices.mainColor}`;
                 });
 
                 const applyAvatarFeatures = () => {
@@ -754,8 +893,8 @@
                 };
 
                 return {
-                    currentScreen, loadingText, isDrawing, setupData, avatarChoices, avatarOptionGroups,
-                    generatedFeatureText, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
+                    currentScreen, loadingText, isDrawing, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
+                    generatedFeatureText, avatarMainSummary, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
                     currentStory, currentImage, timelineTree, currentPageId,
                     startGame, makeChoice, viewTimeline, jumpToNode, handleImageError
                 };
