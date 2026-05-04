@@ -1,13 +1,11 @@
 """ComfyUI 绘图调用模块。
 
-正式绘图流程分为两步：
-1. 使用角色卡和 `workflows/zimage/character_base.json` 生成角色定妆照。
+正式绘图流程：
+1. 根据用户输入构建角色卡，并保存为 JSON 方便复查。
 2. 使用角色卡、动作提示词、场景提示词和 `workflows/zimage/story_page.json` 生成绘本页。
 
-为什么要先生成定妆照：
-- 它是当前会话的角色视觉锚点。
-- 如果定妆照已存在，后续节点会跳过这一步，减少重复生成成本。
-- 即使当前工作流没有直接把定妆照作为图像输入，角色卡提示词也会保持同一角色设定。
+当前绘本页工作流没有使用定妆照作为图像输入，角色一致性主要依赖角色卡提示词重复注入，
+因此正式接口不再生成 `character_base.json` 对应的角色定妆照。
 """
 
 import json
@@ -19,7 +17,7 @@ from pathlib import Path
 import requests
 
 from .character_card import build_character_card, build_story_page_prompt, save_character_card
-from .config import BASE_IMAGE_OUTPUT_DIR, CHARACTER_CARD_OUTPUT_DIR, COMFYUI_SERVER_ADDRESS, TEMP_OUTPUT_DIR, ZIMAGE_WORKFLOW_DIR
+from .config import CHARACTER_CARD_OUTPUT_DIR, COMFYUI_SERVER_ADDRESS, TEMP_OUTPUT_DIR, ZIMAGE_WORKFLOW_DIR
 
 
 def log(step, message):
@@ -105,35 +103,8 @@ def generate_full_story_page(session_id, child_features, story_action, story_sce
     card = build_character_card(child_features)
     save_character_card(card, CHARACTER_CARD_OUTPUT_DIR / f"character_card_{session_id}.json")
 
-    # 定妆照按 session_id 缓存。同一个绘本会话只生成一次定妆照。
-    base_image_path = BASE_IMAGE_OUTPUT_DIR / f"base_{session_id}.png"
-    if not base_image_path.exists():
-        print(f">>> 绘本[{session_id}]是新任务，正在生成专属定妆照...")
-        wf1 = load_workflow("character_base.json")
-
-        # 节点 4 是角色工作流里的正向提示词节点。
-        wf1["4"]["inputs"]["text"] = card.positive_prompt
-
-        # 两个采样节点使用相邻种子，保证同一次任务内部构图和细化可复现。
-        seed = random.randint(1, 999_999_999_999_999)
-        wf1["7"]["inputs"]["noise_seed"] = seed
-        wf1["9"]["inputs"]["noise_seed"] = seed + 1
-
-        print(f"🔍 [Stage 1 Prompt]: {wf1['4']['inputs']['text']}")
-        result = run_comfyui_task(wf1, base_image_path, "阶段1:定妆照", preferred_node_id="11")
-        if not result:
-            return None
-    else:
-        print(f">>> 绘本[{session_id}]已有定妆照，直接跳过阶段 1。")
-
-    # 把角色固定设定和本页剧情动作/场景合成最终绘图提示词。
+    # 把角色卡和本页剧情动作/场景合成最终绘图提示词。
     positive, _negative = build_story_page_prompt(card, story_action, story_scene)
-    positive = (
-        f"{positive}，角色必须严格延续已生成角色定妆照中的设定，画面中只能有这一个主角，"
-        "每一页都必须是同一套服装，同一张脸，同一发型，同一套服装，"
-        "服装设计不能变化，服装颜色不能变化，不能换衣服，不能增加帽子或新配饰，"
-        "允许根据剧情自然改变姿态和表情，只有一个主角，儿童绘本页面插画"
-    )
 
     wf2 = load_workflow("story_page.json")
 
@@ -146,4 +117,4 @@ def generate_full_story_page(session_id, child_features, story_action, story_sce
 
     # 先下载到 temp 目录，随后 main.py 会移动成 outputs/images/node_{page_id}.png。
     final_page_path = TEMP_OUTPUT_DIR / "final_storybook_page.png"
-    return run_comfyui_task(wf2, final_page_path, "阶段2:最终绘本图", preferred_node_id="14")
+    return run_comfyui_task(wf2, final_page_path, "最终绘本图", preferred_node_id="14")

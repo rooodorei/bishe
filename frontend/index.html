@@ -284,7 +284,7 @@
             border: 2px dashed #F2C94C;
         }
 
-/* ================= 硬核：命运之树 (分支时间线 CSS) ================= */
+/* ================= 硬核：剧情树 (分支时间线 CSS) ================= */
         .timeline-scroll-area {
             overflow-x: auto; padding: 20px 20px 60px 20px; background: #fdfdfd;
             border-radius: 20px; border: 4px dashed var(--tree-line); margin-bottom: 20px;
@@ -409,10 +409,57 @@
 <body>
 
     <div id="app">
+        <div v-if="user" class="card" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <strong style="color: var(--primary);">{{ user.username }} 的绘本工作台</strong>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="mini-btn" @click="goDashboard">故事库</button>
+                <button type="button" class="mini-btn" @click="showCreateStory">新建故事</button>
+                <button type="button" class="mini-btn" style="background:#E05A47;" @click="logout">退出</button>
+            </div>
+        </div>
         <transition name="fade" mode="out-in">
 
-            <div v-if="currentScreen === 'setup'" class="card" key="setup">
+            <div v-if="currentScreen === 'auth'" class="card" key="auth">
+                <h1>🎨 AI 奇妙绘本系统</h1>
+                <div style="display:flex; gap:12px; justify-content:center; margin-bottom:20px;">
+                    <button type="button" :class="['mini-btn', { } ]" :style="authMode === 'login' ? '' : 'background:#fff;color:var(--secondary);border:2px solid var(--secondary);'" @click="authMode = 'login'">登录</button>
+                    <button type="button" class="mini-btn" :style="authMode === 'register' ? '' : 'background:#fff;color:var(--secondary);border:2px solid var(--secondary);'" @click="authMode = 'register'">注册</button>
+                </div>
+                <div class="input-group">
+                    <label>用户名</label>
+                    <input v-model="authForm.username" placeholder="请输入用户名">
+                </div>
+                <div class="input-group">
+                    <label>密码</label>
+                    <input type="password" v-model="authForm.password" placeholder="请输入密码" @keyup.enter="submitAuth">
+                </div>
+                <button class="btn-chunky" @click="submitAuth">{{ authMode === 'login' ? '登录' : '注册并登录' }}</button>
+            </div>
+
+            <div v-else-if="currentScreen === 'dashboard'" class="card" key="dashboard">
+                <h1>📚 我的故事库</h1>
+                <button class="btn-chunky" @click="showCreateStory">创建新的绘本故事</button>
+                <p v-if="stories.length === 0" style="text-align:center; color:#888; margin-top:28px;">还没有故事，先创建一本属于你的互动绘本吧。</p>
+                <div v-else style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:16px; margin-top:20px;">
+                    <div v-for="story in stories" :key="story.session_id" style="background:linear-gradient(135deg,#fff7ec 0%,#f0fffd 100%); border:3px solid #fff; border-radius:22px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,.06);">
+                        <h3 style="text-align:left; margin:0 0 8px;">{{ story.title || story.theme }}</h3>
+                        <div style="font-size:13px; color:#777; line-height:1.7;">
+                            <div>主题：{{ story.theme }}</div>
+                            <div>节点数：{{ story.page_count || 0 }}</div>
+                            <div>更新时间：{{ story.update_time || story.create_time }}</div>
+                        </div>
+                        <button class="btn-chunky secondary" @click="openStory(story)">进入故事</button>
+                        <button class="btn-chunky" style="background:#E05A47; box-shadow:0 6px 0 #ad3e31;" @click="deleteStory(story)">删除故事</button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else-if="currentScreen === 'setup'" class="card" key="setup">
                 <h1>🎨 创建你的奇妙绘本</h1>
+                <div class="input-group">
+                    <label>故事标题</label>
+                    <input type="text" v-model="setupData.title" placeholder="例如：小红帽的森林冒险">
+                </div>
                 <div class="input-group">
                     <label>你想去哪里探险？</label>
                     <select v-model="setupData.theme">
@@ -465,6 +512,7 @@
                     </div>
                 </div>
                 <button class="btn-chunky" @click="startGame">🚀 开始奇妙冒险！</button>
+                <button class="btn-chunky secondary" @click="goDashboard">返回故事库</button>
             </div>
 
             <div v-else-if="currentScreen === 'loading'" class="card" key="loading"
@@ -482,7 +530,11 @@
                 <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                     <button @click="viewTimeline"
                         style="background: none; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; padding: 8px 15px; cursor: pointer; font-weight: bold;">
-                        🧭 打开命运之树
+                        🧭 打开剧情树
+                    </button>
+                    <button @click="goDashboard"
+                        style="background: none; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; padding: 8px 15px; cursor: pointer; font-weight: bold;">
+                        📚 返回故事库
                     </button>
                 </div>
 
@@ -522,7 +574,7 @@
             </div>
 
             <div v-else-if="currentScreen === 'timeline'" class="card" key="timeline">
-                <h2>🧭 命运之树</h2>
+                <h2>🧭 剧情树</h2>
                 <p style="text-align: center; color: #888; margin-bottom: 20px;">所有的平行宇宙都在这里，点击任意节点即可跃迁回去改变命运！</p>
 
                 <div class="timeline-scroll-area">
@@ -563,7 +615,7 @@
     <script>
         // =========== 替换 index.html 里面的 script 部分 ===========
 
-        const { createApp, ref, reactive, computed } = Vue;
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
 
         const TreeNodeComponent = {
             name: 'tree-node',
@@ -578,15 +630,20 @@
 
         const app = createApp({
             setup() {
-                const currentScreen = ref('setup');
+                const currentScreen = ref('auth');
                 const loadingText = ref('加载中...');
+                const authMode = ref('login');
+                const authForm = reactive({ username: '', password: '' });
+                const token = ref(localStorage.getItem('storybook_token') || '');
+                const user = ref(null);
+                const stories = ref([]);
                 const isDrawing = ref(false);
                 const isAvatarBuilderOpen = ref(false);
 
                 const sessionId = ref('');
                 const currentPageId = ref(0);
 
-                const setupData = reactive({ theme: '魔法森林探险', features: '' });
+                const setupData = reactive({ title: '', theme: '魔法森林探险', features: '' });
                 const avatarChoices = reactive({
                     role: '小女孩',
                     body: '圆脸，大眼睛，温柔微笑',
@@ -782,15 +839,69 @@
 
                 applyAvatarFeatures();
 
-                const callApi = async (url, data) => {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
+                const authHeaders = () => token.value ? { Authorization: `Bearer ${token.value}` } : {};
+
+                const callApi = async (url, data = null, method = 'POST') => {
+                    const options = { method, headers: { ...authHeaders() } };
+                    if (data !== null) {
+                        options.headers['Content-Type'] = 'application/json';
+                        options.body = JSON.stringify(data);
+                    }
+                    const res = await fetch(url, options);
                     const result = await res.json();
                     if (!res.ok) throw new Error(result.detail || '请求失败');
                     return result;
+                };
+
+                const submitAuth = async () => {
+                    try {
+                        const result = await callApi(`/api/${authMode.value}`, authForm);
+                        token.value = result.token;
+                        user.value = result.user;
+                        localStorage.setItem('storybook_token', result.token);
+                        await goDashboard();
+                    } catch (e) {
+                        alert(e.message);
+                    }
+                };
+
+                const loadMe = async () => {
+                    if (!token.value) return;
+                    try {
+                        const result = await callApi('/api/me', null, 'GET');
+                        user.value = result.user;
+                        await goDashboard();
+                    } catch (e) {
+                        localStorage.removeItem('storybook_token');
+                        token.value = '';
+                        user.value = null;
+                        currentScreen.value = 'auth';
+                    }
+                };
+
+                const logout = async () => {
+                    try {
+                        await callApi('/api/logout');
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                    localStorage.removeItem('storybook_token');
+                    token.value = '';
+                    user.value = null;
+                    currentScreen.value = 'auth';
+                };
+
+                const goDashboard = async () => {
+                    const result = await callApi('/api/storybooks', null, 'GET');
+                    stories.value = result.stories;
+                    currentScreen.value = 'dashboard';
+                };
+
+                const showCreateStory = () => {
+                    setupData.title = '';
+                    setupData.theme = '魔法森林探险';
+                    applyAvatarFeatures();
+                    currentScreen.value = 'setup';
                 };
 
                 const processStoryData = (data) => {
@@ -821,7 +932,11 @@
                     try {
                         loadingText.value = '正在推演世界的开端...';
                         currentScreen.value = 'loading';
-                        const data = await callApi('/api/init_story_text', { child_features: setupData.features, theme: setupData.theme });
+                        const data = await callApi('/api/init_story_text', {
+                            title: setupData.title,
+                            child_features: setupData.features,
+                            theme: setupData.theme
+                        });
                         processStoryData(data);
                     } catch (e) {
                         alert("启动失败：" + e.message);
@@ -846,11 +961,10 @@
                 };
 
                 const viewTimeline = async () => {
-                    loadingText.value = '正在检索命运之树...';
+                    loadingText.value = '正在检索剧情树...';
                     currentScreen.value = 'loading';
                     try {
-                        const res = await fetch(`/api/get_timeline/${sessionId.value}`);
-                        const data = await res.json();
+                        const data = await callApi(`/api/get_timeline/${sessionId.value}`, null, 'GET');
 
                         flatNodes.value = data.nodes; // ⭐ 存下所有节点数据
 
@@ -867,6 +981,42 @@
                     } catch (e) {
                         alert("读取时间线失败");
                         currentScreen.value = 'story';
+                    }
+                };
+
+                const openStory = async (story) => {
+                    try {
+                        loadingText.value = '正在打开故事...';
+                        currentScreen.value = 'loading';
+                        const data = await callApi(`/api/get_timeline/${story.session_id}`, null, 'GET');
+                        sessionId.value = data.session_id;
+                        flatNodes.value = data.nodes;
+                        const latestNode = [...data.nodes].sort((a, b) => b.id - a.id)[0];
+                        if (latestNode) {
+                            currentPageId.value = latestNode.id;
+                            currentStory.narrator_text = latestNode.narrator_text;
+                            currentStory.actor_dialogue = latestNode.actor_dialogue;
+                            currentStory.options = latestNode.options || [];
+                            currentImage.value = latestNode.image_url || 'https://placehold.co/800x400/eee/999?text=图片待生成';
+                            currentScreen.value = 'story';
+                            if (!latestNode.image_url) {
+                                isDrawing.value = true;
+                                fetchImage(latestNode.id);
+                            }
+                        }
+                    } catch (e) {
+                        alert('打开失败：' + e.message);
+                        currentScreen.value = 'dashboard';
+                    }
+                };
+
+                const deleteStory = async (story) => {
+                    if (!confirm(`确定删除《${story.title || story.theme}》吗？`)) return;
+                    try {
+                        await callApi(`/api/storybooks/${story.session_id}`, null, 'DELETE');
+                        await goDashboard();
+                    } catch (e) {
+                        alert('删除失败：' + e.message);
                     }
                 };
 
@@ -892,8 +1042,11 @@
                     currentImage.value = 'https://placehold.co/800x400/eee/999?text=图片生成中...';
                 };
 
+                onMounted(loadMe);
+
                 return {
-                    currentScreen, loadingText, isDrawing, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
+                    currentScreen, loadingText, authMode, authForm, user, stories, submitAuth, logout, goDashboard, showCreateStory, openStory, deleteStory,
+                    isDrawing, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
                     generatedFeatureText, avatarMainSummary, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
                     currentStory, currentImage, timelineTree, currentPageId,
                     startGame, makeChoice, viewTimeline, jumpToNode, handleImageError

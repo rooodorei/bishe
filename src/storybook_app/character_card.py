@@ -27,7 +27,7 @@ class CharacterCard:
         accessories: 固定配饰锚点。
         colors: 固定主色锚点。
         style: 统一画风描述。
-        positive_prompt: 角色定妆照正向提示词。
+        positive_prompt: 角色卡正向提示词，可用于调试或生成角色设定图，当前正式绘本页流程不直接使用。
         negative_prompt: 负向约束提示词。
     """
 
@@ -51,11 +51,16 @@ COLOR_WORDS = [
 ]
 
 HAIR_WORDS = [
+    "白色短发", "黑色短发", "棕色卷发", "金色长发", "黑色双马尾", "棕色马尾", "红色丸子头", "浅蓝色长发",
+    "白色长发", "白色卷发", "白色双马尾", "黑色长发", "棕色短发", "金色短发", "红色短发", "蓝色短发",
     "白色头发", "白发", "黑色头发", "黑发", "棕色头发", "棕发", "金色头发", "金发", "红色头发", "红发",
     "短发", "长发", "卷发", "双马尾", "马尾", "丸子头"
 ]
 
 CLOTHES_WORDS = [
+    "红色斗篷", "蓝色外套", "白色衬衫", "黄色雨衣", "绿色毛衣", "粉色小披肩", "紫色卫衣",
+    "浅黄色连衣裙", "粉色连衣裙", "彩虹色小裙子", "棕色短裤", "绿色背带裤", "蓝色长裤",
+    "棕色小靴子", "红色运动鞋", "蓝色雨靴", "白色小鞋子", "金色小靴子", "绿色布鞋",
     "斗篷", "连衣裙", "裙子", "背带裤", "短裤", "长裤", "卫衣", "外套", "衬衫", "毛衣", "雨衣", "鞋子", "靴子",
     "运动鞋", "围巾", "帽子"
 ]
@@ -64,8 +69,14 @@ ACCESSORY_WORDS = ["发卡", "星星发卡", "书包", "小包", "眼镜", "围�
 
 
 def _collect_terms(text: str, terms: list[str]) -> list[str]:
-    """返回 `terms` 中所有出现在 `text` 里的词。"""
-    return [term for term in terms if term in text]
+    """返回 `terms` 中所有出现在 `text` 里的词，优先保留更具体的长词。"""
+    matches = [term for term in sorted(terms, key=len, reverse=True) if term in text]
+    result: list[str] = []
+    for term in matches:
+        if any(term in existing and term != existing for existing in result):
+            continue
+        result.append(term)
+    return result
 
 
 def _normalize_feature_text(text: str) -> str:
@@ -106,7 +117,7 @@ def build_character_card(child_features: str) -> CharacterCard:
     colors = "，".join(dict.fromkeys(color_terms)) or "明亮温暖的固定配色"
     style = "儿童绘本画风，温暖明亮，干净线条，柔和光线，角色设计稿，高质量，可爱但不过度复杂"
 
-    # 正向提示词用于生成角色定妆照。这里强调白色背景、全身、正对镜头，方便形成清晰角色设定。
+    # 正向提示词保留在角色卡中，方便调试或未来扩展角色设定图；当前正式绘本页流程不直接使用。
     positive_prompt = (
         f"{style}，一个人，只有一个人，单个角色，角色定妆照，白色背景，全身，正对镜头，"
         f"{role}，用户输入特征：{features}，"
@@ -148,12 +159,13 @@ def build_story_page_prompt(card: CharacterCard, story_action: str, story_scene:
         tuple[str, str]: `(positive, negative)`。当前正式工作流只注入 positive。
     """
     positive = (
-        "儿童绘本页面插画，温暖明亮，高质量，干净线条，柔和光线，色彩柔和，故事感强，儿童友好，"
-        "画面中只有一个主角，单个角色，不出现第二个主角，"
-        f"同一个主角：{card.role}，固定外貌：{card.hair}，{card.face}，"
-        f"始终穿着同一套固定服装：{card.clothes}，固定配饰：{card.accessories}，固定主色：{card.colors}，"
-        "不要换衣服，不要改变服装颜色，不要增加新的帽子或复杂配饰，"
-        f"动作：{story_action}，场景：{story_scene}，全身或中景构图，构图清晰，适合儿童互动绘本"
+        "儿童绘本页面插画，温暖明亮，干净线条，柔和光线，儿童友好，"
+        "单个主角，不出现第二个主角，"
+        f"角色卡：{card.raw_features}，"
+        "严格保持角色卡中的外貌、发型、发色、服装、鞋子、配饰和主色，不换装，不新增配饰，"
+        f"动作：{story_action}，"
+        f"场景：{story_scene}，"
+        "全身或中景构图，构图清晰"
     )
     negative = (
         card.negative_prompt

@@ -2,19 +2,24 @@
 
 这个模块是整个后端的调度中心，主要负责把前端请求转换成具体业务流程：
 
-1. 文本生成接口：调用 `llm_engine.py` 生成旁白、台词、动作提示词、场景提示词和选项。
-2. 数据持久化：调用 `database.py` 保存绘本会话、剧情节点、图片 URL 和分支关系。
-3. 图片生成接口：调用 `image_engine.py` 使用 ComfyUI 生成绘本页。
-4. 静态资源：挂载前端页面和生成图片目录，让浏览器可以直接访问。
+1. 用户与故事管理：注册、登录、列出和删除用户自己的绘本故事。
+2. 文本生成接口：调用 `llm_engine.py` 生成旁白、台词、动作提示词、场景提示词和选项。
+3. 数据持久化：调用 `database.py` 保存绘本会话、剧情节点、图片 URL 和分支关系。
+4. 图片生成接口：调用 `image_engine.py` 使用 ComfyUI 生成绘本页。
+5. 静态资源：挂载前端页面和生成图片目录，让浏览器可以直接访问。
 
 运行方式示例：
 `uv run uvicorn storybook_app.main:app --app-dir src --reload --port 8000`
 """
 
+import hashlib
+import hmac
 import os
+import secrets
 import uuid
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -22,44 +27,47 @@ from .config import FRONTEND_DIR, IMAGE_OUTPUT_DIR
 from .database import (
     add_page_node,
     create_storybook,
+    create_user,
+    delete_storybook,
     get_all_nodes,
     get_page,
     get_storybook_info,
+    get_user_by_id,
+    get_user_by_username,
     init_db,
+    list_storybooks,
     rebuild_llm_context,
     update_page_image,
+    user_owns_storybook,
 )
-from .image_engine import generate_full_story_page
+from .test_image_engine import generate_full_story_page
 from .llm_engine import generate_script_turn
 
 
-# FastAPI 应用对象。`storybook_app.main:app` 中的 app 就是这个变量。
-app = FastAPI(title="儿童绘本生成系统 - 命运之树版")
-
-# 模块加载时初始化数据库表。`CREATE TABLE IF NOT EXISTS` 不会覆盖已有数据。
+app = FastAPI(title="儿童绘本生成系统 - 多用户剧情树版")
 init_db()
+
+# 本地演示用内存 token。服务重启后用户需要重新登录。
+SESSION_TOKENS: dict[str, int] = {}
+
+
+class AuthRequest(BaseModel):
+    """注册/登录请求体。"""
+
+    username: str
+    password: str
 
 
 class InitRequest(BaseModel):
-    """创建新绘本的请求体。
-
-    Attributes:
-        child_features: 用户输入的主角特征，例如“白色短发，红色斗篷的小女孩”。
-        theme: 故事主题，例如“魔法森林探险”。
-    """
+    """创建新绘本的请求体。"""
 
     child_features: str
     theme: str
+    title: str | None = None
 
 
 class NextTurnRequest(BaseModel):
-    """生成下一幕剧情的请求体。
-
-    Attributes:
-        session_id: 当前绘本会话 ID。
-        parent_page_id: 用户当前所在的剧情节点 ID，新节点会挂在它下面。
-        user_choice: 用户选择的选项文本，也会作为 LLM 生成下一幕的输入。
-    """
+    """生成下一幕剧情的请求体。"""
 
     session_id: str
     parent_page_id: int
@@ -67,35 +75,123 @@ class NextTurnRequest(BaseModel):
 
 
 class RenderRequest(BaseModel):
-    """渲染图片的请求体。
-
-    Attributes:
-        page_id: 需要生成图片的剧情节点 ID。
-    """
+    """渲染图片的请求体。"""
 
     page_id: int
 
 
+def hash_password(password: str) -> str:
+    """使用随机盐和 SHA-256 保存密码摘要。"""
+    salt = secrets.token_hex(16)
+    digest = hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
+    return f"{salt}${digest}"
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """校验用户密码。"""
+    try:
+        salt, expected = password_hash.split("$", 1)
+    except ValueError:
+        return False
+    digest = hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
+    return hmac.compare_digest(digest, expected)
+
+
+def create_token(user_id: int) -> str:
+    """创建登录 token。"""
+    token = secrets.token_urlsafe(32)
+    SESSION_TOKENS[token] = user_id
+    return token
+
+
+def get_current_user(authorization: Annotated[str | None, Header()] = None) -> dict:
+    """从 Authorization 头读取当前用户。"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="请先登录")
+
+    token = authorization.removeprefix("Bearer ").strip()
+    user_id = SESSION_TOKENS.get(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="用户不存在")
+    return user
+
+
+def ensure_story_owner(user_id: int, session_id: str) -> None:
+    """确认指定故事属于当前用户。"""
+    if not user_owns_storybook(user_id, session_id):
+        raise HTTPException(status_code=403, detail="无权访问这个故事")
+
+
+@app.post("/api/register")
+async def register(req: AuthRequest):
+    """注册新用户。"""
+    username = req.username.strip()
+    if len(username) < 2:
+        raise HTTPException(status_code=400, detail="用户名至少需要 2 个字符")
+    if len(req.password) < 4:
+        raise HTTPException(status_code=400, detail="密码至少需要 4 个字符")
+    if get_user_by_username(username):
+        raise HTTPException(status_code=400, detail="用户名已存在")
+
+    user_id = create_user(username, hash_password(req.password))
+    token = create_token(user_id)
+    return {"token": token, "user": {"id": user_id, "username": username}}
+
+
+@app.post("/api/login")
+async def login(req: AuthRequest):
+    """登录用户。"""
+    user = get_user_by_username(req.username.strip())
+    if not user or not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+
+    token = create_token(user["id"])
+    return {"token": token, "user": {"id": user["id"], "username": user["username"]}}
+
+
+@app.get("/api/me")
+async def me(current_user: Annotated[dict, Depends(get_current_user)]):
+    """返回当前登录用户。"""
+    return {"user": current_user}
+
+
+@app.post("/api/logout")
+async def logout(authorization: Annotated[str | None, Header()] = None):
+    """退出登录。"""
+    if authorization and authorization.startswith("Bearer "):
+        SESSION_TOKENS.pop(authorization.removeprefix("Bearer ").strip(), None)
+    return {"ok": True}
+
+
+@app.get("/api/storybooks")
+async def storybooks(current_user: Annotated[dict, Depends(get_current_user)]):
+    """列出当前用户的全部绘本故事。"""
+    return {"stories": list_storybooks(current_user["id"])}
+
+
+@app.delete("/api/storybooks/{session_id}")
+async def remove_storybook(session_id: str, current_user: Annotated[dict, Depends(get_current_user)]):
+    """删除当前用户的某个绘本故事。"""
+    if not delete_storybook(current_user["id"], session_id):
+        raise HTTPException(status_code=404, detail="故事不存在或无权删除")
+    return {"ok": True}
+
+
 @app.post("/api/init_story_text")
-async def init_story_text(req: InitRequest):
-    """创建新绘本并生成根节点剧情。
-
-    该接口只生成文本，不生成图片。前端拿到 `page_id` 后，如果需要显示图片，
-    会再调用 `/api/render_image`。
-    """
-    # 每本绘本使用一个 UUID 作为会话 ID，后续所有剧情节点都通过它归属到同一本书。
+async def init_story_text(req: InitRequest, current_user: Annotated[dict, Depends(get_current_user)]):
+    """创建新绘本并生成根节点剧情。"""
     session_id = str(uuid.uuid4())
-
-    # 开局上下文会作为第一轮 LLM 的前情提要，帮助模型围绕主题开始故事。
     opening_context = f"全局设定：故事主题是【{req.theme}】。主角准备好冒险了。"
 
-    # 生成第一幕剧情。第三个参数固定为“开始冒险”，代表根节点的用户选择。
     turn_data = generate_script_turn(req.child_features, opening_context, "开始冒险")
     if not turn_data:
         raise HTTPException(status_code=500, detail="剧本生成失败")
 
-    # 先保存绘本会话，再保存根节点。根节点 parent_id=0，depth=0。
-    create_storybook(session_id, req.theme, req.child_features)
+    create_storybook(session_id, req.theme, req.child_features, current_user["id"], req.title)
     page_id = add_page_node(
         session_id,
         0,
@@ -118,19 +214,22 @@ async def init_story_text(req: InitRequest):
 
 
 @app.post("/api/next_turn_text")
-async def next_turn_text(req: NextTurnRequest):
+async def next_turn_text(req: NextTurnRequest, current_user: Annotated[dict, Depends(get_current_user)]):
     """根据用户选择生成新的剧情分支节点。"""
-    # 从父节点一路回溯到根节点，恢复当前分支的剧情记忆和主角特征。
+    ensure_story_owner(current_user["id"], req.session_id)
+
+    page = get_page(req.parent_page_id)
+    if not page or page["session_id"] != req.session_id:
+        raise HTTPException(status_code=404, detail="找不到当前故事节点")
+
     features, memory_list, current_path = rebuild_llm_context(req.parent_page_id)
     if not features:
         raise HTTPException(status_code=404, detail="找不到时间线")
 
-    # 将上下文列表拼成字符串，让 LLM 知道当前故事走到了哪里。
     turn_data = generate_script_turn(features, "\n".join(memory_list), req.user_choice)
     if not turn_data:
         raise HTTPException(status_code=500, detail="剧本生成失败")
 
-    # 新节点深度等于父节点深度 + 1。current_path 最后一个节点就是当前父节点。
     depth = current_path[-1]["depth"] + 1 if current_path else 1
     page_id = add_page_node(
         req.session_id,
@@ -153,17 +252,17 @@ async def next_turn_text(req: NextTurnRequest):
 
 
 @app.post("/api/render_image")
-async def render_image(req: RenderRequest):
+async def render_image(req: RenderRequest, current_user: Annotated[dict, Depends(get_current_user)]):
     """为指定剧情节点生成图片并写回数据库。"""
-    # 先查页面节点，因为页面里保存了 action_prompt 和 scene_prompt。
     page = get_page(req.page_id)
     if not page:
         raise HTTPException(status_code=404, detail="找不到节点")
 
-    # 再查绘本信息，因为绘本表里保存了原始主角特征 features。
     book = get_storybook_info(page["session_id"])
+    if not book:
+        raise HTTPException(status_code=404, detail="找不到故事")
+    ensure_story_owner(current_user["id"], book["session_id"])
 
-    # 图片生成需要三类信息：主角特征、当前动作、当前场景。
     img_path = generate_full_story_page(
         page["session_id"],
         book["features"],
@@ -173,16 +272,13 @@ async def render_image(req: RenderRequest):
     if not img_path:
         raise HTTPException(status_code=500, detail="图片生成失败")
 
-    # ComfyUI 生成的临时图会被移动成稳定的节点图片文件名，方便前端缓存和数据库记录。
     final_img_name = f"node_{req.page_id}.png"
     final_img_path = IMAGE_OUTPUT_DIR / final_img_name
 
-    # 重复渲染同一节点时覆盖旧图。
     if final_img_path.exists():
         final_img_path.unlink()
     os.replace(img_path, final_img_path)
 
-    # `/images` 在本文件底部挂载到 IMAGE_OUTPUT_DIR，因此这个 URL 可被前端直接访问。
     image_url = f"/images/{final_img_name}"
     update_page_image(req.page_id, image_url)
 
@@ -190,17 +286,21 @@ async def render_image(req: RenderRequest):
 
 
 @app.get("/api/get_timeline/{session_id}")
-async def get_timeline(session_id: str):
-    """返回一个绘本会话的所有节点，用于前端绘制命运之树。"""
+async def get_timeline(session_id: str, current_user: Annotated[dict, Depends(get_current_user)]):
+    """返回一个绘本会话的所有节点，用于前端绘制剧情树。"""
+    ensure_story_owner(current_user["id"], session_id)
     book = get_storybook_info(session_id)
     nodes = get_all_nodes(session_id)
     if not book or not nodes:
         raise HTTPException(status_code=404, detail="无记录")
-    return {"theme": book["theme"], "features": book["features"], "nodes": nodes}
+    return {
+        "session_id": book["session_id"],
+        "title": book["title"],
+        "theme": book["theme"],
+        "features": book["features"],
+        "nodes": nodes,
+    }
 
 
-# 图片必须先挂载到 `/images`，否则会被下面的 `/` 静态页面挂载拦截。
 app.mount("/images", StaticFiles(directory=IMAGE_OUTPUT_DIR), name="images")
-
-# 前端单页 HTML 挂载在根路径，访问 http://127.0.0.1:8000/ 即可打开页面。
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

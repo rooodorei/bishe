@@ -46,9 +46,6 @@ OUTPUT_DIR = PROJECT_ROOT / "outputs"
 # 最终提供给前端访问的图片目录，对应 URL 前缀 `/images`。
 IMAGE_OUTPUT_DIR = OUTPUT_DIR / "images"
 
-# 每个绘本会话的角色定妆照目录。
-BASE_IMAGE_OUTPUT_DIR = OUTPUT_DIR / "base_images"
-
 # 每个绘本会话的角色卡 JSON 目录。
 CHARACTER_CARD_OUTPUT_DIR = OUTPUT_DIR / "character_cards"
 
@@ -56,7 +53,7 @@ CHARACTER_CARD_OUTPUT_DIR = OUTPUT_DIR / "character_cards"
 TEMP_OUTPUT_DIR = OUTPUT_DIR / "temp"
 
 # 这些目录都是运行时必需目录。这里统一创建，其他模块可以直接写文件。
-for directory in (DATA_DIR, IMAGE_OUTPUT_DIR, BASE_IMAGE_OUTPUT_DIR, CHARACTER_CARD_OUTPUT_DIR, TEMP_OUTPUT_DIR):
+for directory in (DATA_DIR, IMAGE_OUTPUT_DIR, CHARACTER_CARD_OUTPUT_DIR, TEMP_OUTPUT_DIR):
     directory.mkdir(parents=True, exist_ok=True)
 
 
@@ -68,7 +65,7 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-f05a2b91afc74603b56ce862208422fe")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
 
 # 具体模型名称。这里从环境变量读取，方便在不改代码的情况下切换模型。
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-v4-pro")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-")
 
 
 # ================= ComfyUI 配置 =================
