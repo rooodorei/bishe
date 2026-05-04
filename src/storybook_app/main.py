@@ -41,7 +41,7 @@ from .database import (
     user_owns_storybook,
 )
 from .test_image_engine import generate_full_story_page
-from .llm_engine import generate_script_turn
+from .llm_engine import generate_script_turn, get_llm_settings, set_llm_settings
 
 
 app = FastAPI(title="儿童绘本生成系统 - 多用户剧情树版")
@@ -78,6 +78,14 @@ class RenderRequest(BaseModel):
     """渲染图片的请求体。"""
 
     page_id: int
+
+
+class LLMSettingsRequest(BaseModel):
+    """切换大语言模型配置的请求体。"""
+
+    model_name: str
+    base_url: str
+    api_key: str | None = None
 
 
 def hash_password(password: str) -> str:
@@ -165,6 +173,25 @@ async def logout(authorization: Annotated[str | None, Header()] = None):
     if authorization and authorization.startswith("Bearer "):
         SESSION_TOKENS.pop(authorization.removeprefix("Bearer ").strip(), None)
     return {"ok": True}
+
+
+@app.get("/api/settings/llm")
+async def get_llm_settings_api(current_user: Annotated[dict, Depends(get_current_user)]):
+    """返回当前运行时使用的大语言模型配置。"""
+    return get_llm_settings()
+
+
+@app.post("/api/settings/llm")
+async def update_llm_settings_api(
+    req: LLMSettingsRequest,
+    current_user: Annotated[dict, Depends(get_current_user)],
+):
+    """切换当前运行时使用的大语言模型配置。"""
+    if not req.model_name.strip():
+        raise HTTPException(status_code=400, detail="模型名称不能为空")
+    if not req.base_url.strip():
+        raise HTTPException(status_code=400, detail="接口地址不能为空")
+    return set_llm_settings(req.model_name, req.base_url, req.api_key)
 
 
 @app.get("/api/storybooks")

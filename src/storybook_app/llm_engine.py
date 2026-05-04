@@ -23,8 +23,39 @@ from openai import OpenAI
 from .config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 
 
-# OpenAI 兼容客户端。DeepSeek 等兼容 OpenAI SDK 的服务都可以使用这个客户端调用。
-client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+# 当前运行时使用的大语言模型配置。默认来自环境变量/配置文件，设置页可以临时切换。
+CURRENT_LLM_API_KEY = LLM_API_KEY
+CURRENT_LLM_BASE_URL = LLM_BASE_URL
+CURRENT_LLM_MODEL_NAME = LLM_MODEL_NAME
+
+
+def _mask_api_key(api_key: str) -> str:
+    """返回 API Key 掩码，避免前端读取到明文。"""
+    if not api_key:
+        return ""
+    if len(api_key) <= 8:
+        return "****"
+    return f"{api_key[:4]}****{api_key[-4:]}"
+
+
+def get_llm_settings() -> dict:
+    """返回当前运行时使用的大语言模型配置，不包含明文 API Key。"""
+    return {
+        "model_name": CURRENT_LLM_MODEL_NAME,
+        "base_url": CURRENT_LLM_BASE_URL,
+        "api_key_configured": bool(CURRENT_LLM_API_KEY),
+        "api_key_masked": _mask_api_key(CURRENT_LLM_API_KEY),
+    }
+
+
+def set_llm_settings(model_name: str, base_url: str, api_key: str | None = None) -> dict:
+    """切换当前运行时使用的大语言模型配置。"""
+    global CURRENT_LLM_API_KEY, CURRENT_LLM_BASE_URL, CURRENT_LLM_MODEL_NAME
+    CURRENT_LLM_MODEL_NAME = model_name.strip()
+    CURRENT_LLM_BASE_URL = base_url.strip().rstrip("/")
+    if api_key is not None and api_key.strip():
+        CURRENT_LLM_API_KEY = api_key.strip()
+    return get_llm_settings()
 
 
 def chat_with_agent(system_prompt, user_message, json_mode=False):
@@ -46,11 +77,12 @@ def chat_with_agent(system_prompt, user_message, json_mode=False):
     print("\n" + "=" * 25 + " LLM INPUT " + "=" * 25)
     print(f"【User Message】: {user_message}")
 
-    kwargs = {"model": LLM_MODEL_NAME, "messages": messages, "temperature": 0.7}
+    kwargs = {"model": CURRENT_LLM_MODEL_NAME, "messages": messages, "temperature": 0.7}
     if json_mode:
         # OpenAI 兼容 JSON 模式可以降低返回 Markdown 或普通文本的概率。
         kwargs["response_format"] = {"type": "json_object"}
 
+    client = OpenAI(api_key=CURRENT_LLM_API_KEY, base_url=CURRENT_LLM_BASE_URL)
     response = client.chat.completions.create(**kwargs)
     result = response.choices[0].message.content.strip()
 

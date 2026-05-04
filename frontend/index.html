@@ -33,8 +33,92 @@
 
         #app {
             width: 100%;
-            max-width: 800px;
+            max-width: 980px;
             position: relative;
+        }
+
+        #app.with-sidebar {
+            max-width: 1100px;
+            margin-left: 260px;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 22px;
+            top: 22px;
+            bottom: 22px;
+            width: 230px;
+            background: rgba(253, 255, 252, 0.96);
+            border: 4px solid #fff;
+            border-radius: 28px;
+            box-shadow: var(--paper-shadow);
+            padding: 22px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .sidebar-brand {
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1.4;
+            margin-bottom: 18px;
+        }
+
+        .sidebar-user {
+            background: #FFF9E6;
+            border: 2px dashed #F2C94C;
+            border-radius: 18px;
+            padding: 12px;
+            color: #666;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        .sidebar-nav {
+            display: grid;
+            gap: 10px;
+        }
+
+        .sidebar-btn {
+            width: 100%;
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 12px 14px;
+            text-align: left;
+            background: #f7fbfb;
+            color: #555;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .sidebar-btn.active {
+            background: #fff1e9;
+            border-color: var(--primary);
+            color: #d9734e;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+        }
+
+        @media (max-width: 980px) {
+            body {
+                padding: 12px;
+            }
+
+            #app.with-sidebar {
+                margin-left: 0;
+                padding-top: 0;
+            }
+
+            .sidebar {
+                position: static;
+                width: 100%;
+                margin-bottom: 16px;
+            }
         }
 
         .card {
@@ -408,15 +492,23 @@
 
 <body>
 
-    <div id="app">
-        <div v-if="user" class="card" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-            <strong style="color: var(--primary);">{{ user.username }} 的绘本工作台</strong>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button type="button" class="mini-btn" @click="goDashboard">故事库</button>
-                <button type="button" class="mini-btn" @click="showCreateStory">新建故事</button>
-                <button type="button" class="mini-btn" style="background:#E05A47;" @click="logout">退出</button>
+    <div id="app" :class="{ 'with-sidebar': user }">
+        <aside v-if="user" class="sidebar">
+            <div class="sidebar-brand">儿童绘本<br>创作</div>
+            <div class="sidebar-user">
+                <div>当前账户</div>
+                <strong style="color: var(--primary);">{{ user.username }}</strong>
             </div>
-        </div>
+            <div class="sidebar-nav">
+                <button type="button" :class="['sidebar-btn', { active: currentScreen === 'account' }]" @click="showAccount">账户</button>
+                <button type="button" :class="['sidebar-btn', { active: currentScreen === 'dashboard' || currentScreen === 'story' || currentScreen === 'timeline' }]" @click="goDashboard">绘本</button>
+                <button type="button" :class="['sidebar-btn', { active: currentScreen === 'setup' }]" @click="showCreateStory">新建绘本</button>
+                <button type="button" :class="['sidebar-btn', { active: currentScreen === 'settings' }]" @click="showSettings">设置</button>
+            </div>
+            <div class="sidebar-footer">
+                <button type="button" class="mini-btn" style="width:100%; background:#E05A47;" @click="logout">退出登录</button>
+            </div>
+        </aside>
         <transition name="fade" mode="out-in">
 
             <div v-if="currentScreen === 'auth'" class="card" key="auth">
@@ -434,6 +526,50 @@
                     <input type="password" v-model="authForm.password" placeholder="请输入密码" @keyup.enter="submitAuth">
                 </div>
                 <button class="btn-chunky" @click="submitAuth">{{ authMode === 'login' ? '登录' : '注册并登录' }}</button>
+            </div>
+
+            <div v-else-if="currentScreen === 'account'" class="card" key="account">
+                <h1>账户</h1>
+                <div class="story-text-box">
+                    <p><strong>用户名：</strong>{{ user.username }}</p>
+                    <p><strong>用户 ID：</strong>{{ user.id }}</p>
+                    <p><strong>说明：</strong>当前账号下的绘本故事只会在自己的故事库中显示。</p>
+                </div>
+                <button class="btn-chunky secondary" @click="goDashboard">进入我的绘本</button>
+            </div>
+
+            <div v-else-if="currentScreen === 'settings'" class="card" key="settings">
+                <h1>设置</h1>
+                <div class="input-group">
+                    <label>接口地址 Base URL</label>
+                    <input type="text" v-model="llmSettings.base_url" placeholder="例如：https://api.deepseek.com">
+                </div>
+                <div class="input-group">
+                    <label>大语言模型名称</label>
+                    <input type="text" v-model="llmSettings.model_name" placeholder="例如：deepseek-v4-pro">
+                </div>
+                <div class="input-group">
+                    <label>API Key</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input :type="showApiKey ? 'text' : 'password'" v-model="llmSettings.api_key" placeholder="留空则继续使用当前已配置的 API Key">
+                        <button type="button" class="mini-btn" style="width:110px;" @click="showApiKey = !showApiKey">{{ showApiKey ? '隐藏' : '显示' }}</button>
+                    </div>
+                    <p style="font-size: 13px; color: #888; line-height: 1.7; margin-bottom:0;">
+                        当前 Key：{{ llmSettings.api_key_configured ? llmSettings.api_key_masked : '未配置' }}。出于安全考虑，后端不会把明文 API Key 回传到前端；如果不想更换 Key，这里留空即可。
+                    </p>
+                </div>
+                <div class="feature-toolbar">
+                    <button type="button" class="mini-btn" @click="saveLLMSettings">保存模型设置</button>
+                    <button type="button" class="mini-btn" style="background:#fff;color:var(--secondary);border:2px solid var(--secondary);" @click="loadLLMSettings">重新读取</button>
+                </div>
+                <p style="font-size: 13px; color: #888; line-height: 1.7;">
+                    该设置会影响后续剧情生成。当前实现是运行时设置，服务重启后会恢复为环境变量或配置文件里的默认接口地址、模型和 API Key。
+                </p>
+                <div class="story-text-box">
+                    <p style="margin-top:0;"><strong>填写示例：</strong></p>
+                    <p>Base URL：https://api.deepseek.com 或 https://api.openai.com/v1</p>
+                    <p>模型名：deepseek-v4-pro / deepseek-chat / gpt-4o / gpt-4.1-mini / 你的 OpenAI 兼容模型名称</p>
+                </div>
             </div>
 
             <div v-else-if="currentScreen === 'dashboard'" class="card" key="dashboard">
@@ -637,6 +773,14 @@
                 const token = ref(localStorage.getItem('storybook_token') || '');
                 const user = ref(null);
                 const stories = ref([]);
+                const llmSettings = reactive({
+                    model_name: '',
+                    base_url: '',
+                    api_key: '',
+                    api_key_configured: false,
+                    api_key_masked: ''
+                });
+                const showApiKey = ref(false);
                 const isDrawing = ref(false);
                 const isAvatarBuilderOpen = ref(false);
 
@@ -904,6 +1048,49 @@
                     currentScreen.value = 'setup';
                 };
 
+                const showAccount = () => {
+                    currentScreen.value = 'account';
+                };
+
+                const loadLLMSettings = async () => {
+                    try {
+                        const result = await callApi('/api/settings/llm', null, 'GET');
+                        llmSettings.model_name = result.model_name || '';
+                        llmSettings.base_url = result.base_url || '';
+                        llmSettings.api_key = '';
+                        llmSettings.api_key_configured = !!result.api_key_configured;
+                        llmSettings.api_key_masked = result.api_key_masked || '';
+                        showApiKey.value = false;
+                    } catch (e) {
+                        alert('读取模型设置失败：' + e.message);
+                    }
+                };
+
+                const showSettings = async () => {
+                    currentScreen.value = 'settings';
+                    await loadLLMSettings();
+                };
+
+                const saveLLMSettings = async () => {
+                    try {
+                        const payload = {
+                            model_name: llmSettings.model_name,
+                            base_url: llmSettings.base_url,
+                            api_key: llmSettings.api_key || null
+                        };
+                        const result = await callApi('/api/settings/llm', payload);
+                        llmSettings.model_name = result.model_name || '';
+                        llmSettings.base_url = result.base_url || '';
+                        llmSettings.api_key = '';
+                        llmSettings.api_key_configured = !!result.api_key_configured;
+                        llmSettings.api_key_masked = result.api_key_masked || '';
+                        showApiKey.value = false;
+                        alert('模型已更新');
+                    } catch (e) {
+                        alert('保存模型设置失败：' + e.message);
+                    }
+                };
+
                 const processStoryData = (data) => {
                     if (data.session_id) sessionId.value = data.session_id;
                     currentPageId.value = data.page_id;
@@ -1045,7 +1232,9 @@
                 onMounted(loadMe);
 
                 return {
-                    currentScreen, loadingText, authMode, authForm, user, stories, submitAuth, logout, goDashboard, showCreateStory, openStory, deleteStory,
+                    currentScreen, loadingText, authMode, authForm, user, stories, llmSettings, showApiKey,
+                    submitAuth, logout, goDashboard, showCreateStory, showAccount, showSettings, loadLLMSettings, saveLLMSettings,
+                    openStory, deleteStory,
                     isDrawing, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
                     generatedFeatureText, avatarMainSummary, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
                     currentStory, currentImage, timelineTree, currentPageId,

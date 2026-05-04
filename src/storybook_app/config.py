@@ -65,7 +65,7 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-f05a2b91afc74603b56ce862208422fe")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.deepseek.com")
 
 # 具体模型名称。这里从环境变量读取，方便在不改代码的情况下切换模型。
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "deepseek-v4-flash")
 
 
 # ================= ComfyUI 配置 =================
