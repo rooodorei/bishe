@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 奇妙绘本</title>
+    <title>绘本</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         /* ================= 基础 UI 风格 ================= */
@@ -38,7 +38,7 @@
         }
 
         #app.with-sidebar {
-            max-width: 1100px;
+            max-width: 1480px;
             margin-left: 260px;
         }
 
@@ -339,24 +339,50 @@
             white-space: nowrap;
         }
 
+        .story-layout {
+            display: grid;
+            grid-template-columns: minmax(480px, 1.05fr) minmax(420px, 0.95fr);
+            gap: 34px;
+            align-items: stretch;
+        }
+
+        .story-left,
+        .story-right {
+            min-width: 0;
+        }
+
+        .story-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .story-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
         .story-image-box {
             width: 100%;
-            min-height: 250px;
-            background: #eee;
-            border-radius: 20px;
+            min-height: 680px;
+            background: linear-gradient(135deg, #f6f6f6 0%, #eaf7f6 100%);
+            border-radius: 24px;
             overflow: hidden;
-            margin-bottom: 20px;
             border: 4px solid #fff;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex: 1;
         }
 
         .story-image-box img {
             width: 100%;
+            height: 100%;
+            min-height: 680px;
             display: block;
+            object-fit: cover;
         }
 
         .story-text-box {
@@ -366,6 +392,75 @@
             font-size: 18px;
             line-height: 1.8;
             border: 2px dashed #F2C94C;
+        }
+
+        .story-choice-panel {
+            background: #f7fbfb;
+            border: 3px solid #fff;
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .story-choice-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr;
+        }
+
+        .custom-choice-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .custom-choice-row input {
+            margin: 0;
+        }
+
+        .custom-choice-row .btn-chunky {
+            width: auto;
+            margin: 0;
+            padding: 0 25px;
+            min-width: 92px;
+        }
+
+        @media (max-width: 1320px) {
+            .story-layout {
+                grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.9fr);
+                gap: 28px;
+            }
+
+            .story-image-box,
+            .story-image-box img {
+                min-height: 600px;
+            }
+        }
+
+        @media (max-width: 1180px) {
+            .story-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .story-image-box,
+            .story-image-box img {
+                min-height: 420px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .card {
+                padding: 24px;
+            }
+
+            .custom-choice-row {
+                flex-direction: column;
+            }
+
+            .custom-choice-row .btn-chunky {
+                width: 100%;
+                padding: 15px 30px;
+            }
         }
 
 /* ================= 硬核：剧情树 (分支时间线 CSS) ================= */
@@ -512,7 +607,7 @@
         <transition name="fade" mode="out-in">
 
             <div v-if="currentScreen === 'auth'" class="card" key="auth">
-                <h1>🎨 AI 奇妙绘本系统</h1>
+                <h1>儿童绘本系统</h1>
                 <div style="display:flex; gap:12px; justify-content:center; margin-bottom:20px;">
                     <button type="button" :class="['mini-btn', { } ]" :style="authMode === 'login' ? '' : 'background:#fff;color:var(--secondary);border:2px solid var(--secondary);'" @click="authMode = 'login'">登录</button>
                     <button type="button" class="mini-btn" :style="authMode === 'register' ? '' : 'background:#fff;color:var(--secondary);border:2px solid var(--secondary);'" @click="authMode = 'register'">注册</button>
@@ -674,37 +769,42 @@
                     </button>
                 </div>
 
-                <div class="story-image-box">
-                    <div v-if="isDrawing" style="color: #888; font-weight: bold; text-align: center;">
-                        <div class="bouncing-loader" style="margin-bottom: 10px;">
-                            <div></div>
-                            <div></div>
-                            <div></div>
+                <div class="story-layout">
+                    <div class="story-left">
+                        <div class="story-image-box">
+                            <div v-if="isDrawing" style="color: #888; font-weight: bold; text-align: center;">
+                                <div class="bouncing-loader" style="margin-bottom: 10px;">
+                                    <div></div>
+                                    <div></div>
+                                    <div></div>
+                                </div>
+                                等待画面显现...
+                            </div>
+                            <img v-else :src="currentImage + '?t=' + Date.now()" @error="handleImageError" alt="绘本画面">
                         </div>
-                        等待画面显现...
                     </div>
-                    <img v-else :src="currentImage + '?t=' + Date.now()" @error="handleImageError" alt="绘本画面">
-                </div>
 
-                <div class="story-text-box">
-                    <p style="margin-top: 0;">{{ currentStory.narrator_text }}</p>
-                    <p style="color: #E05A47; font-weight: bold; margin-bottom: 0;">
-                        👦 主角说："{{ currentStory.actor_dialogue }}"
-                    </p>
-                </div>
+                    <div class="story-right">
+                        <div class="story-text-box">
+                            <p style="margin-top: 0;">{{ currentStory.narrator_text }}</p>
+                            <p style="color: #E05A47; font-weight: bold; margin-bottom: 0;">
+                                👦 主角说："{{ currentStory.actor_dialogue }}"
+                            </p>
+                        </div>
 
-                <div style="margin-top: 30px;">
-                    <h3 style="text-align: left; font-size: 18px; color: #555;">接下来做什么？</h3>
-                    <div style="display: grid; gap: 10px; grid-template-columns: 1fr 1fr;">
-                        <button v-for="(opt, index) in currentStory.options" :key="index" class="btn-chunky secondary"
-                            style="font-size: 16px; margin-top:0;" :disabled="isDrawing" @click="makeChoice(opt)">
-                            👉 {{ opt }}
-                        </button>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想..." style="margin: 0;">
-                        <button class="btn-chunky" style="width: auto; margin: 0; padding: 0 25px;"
-                            :disabled="isDrawing || !customChoice" @click="makeChoice(customChoice)">出发</button>
+                        <div class="story-choice-panel">
+                            <h3 style="text-align: left; font-size: 18px; color: #555; margin-top: 0;">接下来做什么？</h3>
+                            <div class="story-choice-grid">
+                                <button v-for="(opt, index) in currentStory.options" :key="index" class="btn-chunky secondary"
+                                    style="font-size: 16px; margin-top:0;" :disabled="isDrawing" @click="makeChoice(opt)">
+                                    👉 {{ opt }}
+                                </button>
+                            </div>
+                            <div class="custom-choice-row">
+                                <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想...">
+                                <button class="btn-chunky" :disabled="isDrawing || !customChoice" @click="makeChoice(customChoice)">出发</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

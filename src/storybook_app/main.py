@@ -12,10 +12,13 @@
 `uv run uvicorn storybook_app.main:app --app-dir src --reload --port 8000`
 """
 
+import base64
 import hashlib
 import hmac
+import json
 import os
 import secrets
+import time
 import uuid
 from typing import Annotated
 
@@ -40,15 +43,18 @@ from .database import (
     update_page_image,
     user_owns_storybook,
 )
-from .test_image_engine import generate_full_story_page
+from .image_engine import generate_full_story_page # 切回正式绘图引擎
+# from .test_image_engine import generate_full_story_page
 from .llm_engine import generate_script_turn, get_llm_settings, set_llm_settings
 
 
 app = FastAPI(title="儿童绘本生成系统 - 多用户剧情树版")
 init_db()
 
-# 本地演示用内存 token。服务重启后用户需要重新登录。
-SESSION_TOKENS: dict[str, int] = {}
+# JWT 配置。生产环境应通过环境变量设置稳定且足够复杂的密钥。
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "storybook-dev-secret-change-me")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRE_SECONDS", str(60 * 60 * 24 * 7)))
 
 
 class AuthRequest(BaseModel):
@@ -105,20 +111,59 @@ def verify_password(password: str, password_hash: str) -> bool:
     return hmac.compare_digest(digest, expected)
 
 
+def _b64url_encode(data: bytes) -> str:
+    """返回 JWT 使用的无填充 Base64URL 字符串。"""
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(data: str) -> bytes:
+    """解码 JWT 使用的无填充 Base64URL 字符串。"""
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
 def create_token(user_id: int) -> str:
-    """创建登录 token。"""
-    token = secrets.token_urlsafe(32)
-    SESSION_TOKENS[token] = user_id
-    return token
+    """创建带签名和过期时间的 JWT。"""
+    now = int(time.time())
+    header = {"alg": JWT_ALGORITHM, "typ": "JWT"}
+    payload = {"sub": str(user_id), "iat": now, "exp": now + JWT_EXPIRE_SECONDS}
+
+    header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
+    payload_b64 = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
+    signature = hmac.new(JWT_SECRET_KEY.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    return f"{header_b64}.{payload_b64}.{_b64url_encode(signature)}"
+
+
+def decode_token(token: str) -> int | None:
+    """校验 JWT 签名与有效期，成功时返回用户 ID。"""
+    try:
+        header_b64, payload_b64, signature_b64 = token.split(".")
+        signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
+        expected_signature = hmac.new(JWT_SECRET_KEY.encode("utf-8"), signing_input, hashlib.sha256).digest()
+        actual_signature = _b64url_decode(signature_b64)
+        if not hmac.compare_digest(actual_signature, expected_signature):
+            return None
+
+        header = json.loads(_b64url_decode(header_b64))
+        if header.get("alg") != JWT_ALGORITHM:
+            return None
+
+        payload = json.loads(_b64url_decode(payload_b64))
+        if int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        return int(payload["sub"])
+    except Exception:
+        return None
 
 
 def get_current_user(authorization: Annotated[str | None, Header()] = None) -> dict:
-    """从 Authorization 头读取当前用户。"""
+    """从 Authorization 头读取并校验当前用户。"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="请先登录")
 
     token = authorization.removeprefix("Bearer ").strip()
-    user_id = SESSION_TOKENS.get(token)
+    user_id = decode_token(token)
     if not user_id:
         raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
 
@@ -168,10 +213,8 @@ async def me(current_user: Annotated[dict, Depends(get_current_user)]):
 
 
 @app.post("/api/logout")
-async def logout(authorization: Annotated[str | None, Header()] = None):
-    """退出登录。"""
-    if authorization and authorization.startswith("Bearer "):
-        SESSION_TOKENS.pop(authorization.removeprefix("Bearer ").strip(), None)
+async def logout():
+    """退出登录。JWT 由前端删除，本接口保留用于统一交互流程。"""
     return {"ok": True}
 
 

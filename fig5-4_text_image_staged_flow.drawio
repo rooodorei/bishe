@@ -1,0 +1,98 @@
+<mxfile host="app.diagrams.net" modified="2026-05-06T00:00:00.000Z" agent="gpt-5.5" version="24.7.17" type="device">
+  <diagram id="fig5-4-text-image-staged-flow" name="图5-4 文本与图像分阶段生成流程图">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="图 5-4 文本与图像分阶段生成流程图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=24;fontStyle=1;fontColor=#1F2937" vertex="1" parent="1">
+          <mxGeometry x="430" y="30" width="540" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane-user" value="用户" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#EAF3FF;strokeColor=#5B8DEF;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#1F3A5F" vertex="1" parent="1">
+          <mxGeometry x="70" y="110" width="170" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-front" value="前端" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#F0FDF4;strokeColor=#22C55E;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#166534" vertex="1" parent="1">
+          <mxGeometry x="250" y="110" width="220" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-back" value="后端业务服务" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#FFF4E6;strokeColor=#F59E0B;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#7C4A03" vertex="1" parent="1">
+          <mxGeometry x="480" y="110" width="250" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-llm" value="文本生成模块" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#FEE2E2;strokeColor=#EF4444;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#7F1D1D" vertex="1" parent="1">
+          <mxGeometry x="740" y="110" width="210" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-img" value="图像生成模块" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#ECFDF5;strokeColor=#10B981;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#065F46" vertex="1" parent="1">
+          <mxGeometry x="960" y="110" width="210" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-db" value="数据库 / 图片文件" style="swimlane;html=1;horizontal=0;startSize=34;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=2;fontSize=16;fontStyle=1;fontColor=#4C1D95" vertex="1" parent="1">
+          <mxGeometry x="1180" y="110" width="170" height="670" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t0" value="T0：用户点击选项&lt;br&gt;或开始故事" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8DEF;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="95" y="160" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="front-request-text" value="提交用户选择" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#22C55E;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="300" y="160" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="back-context" value="校验故事状态&lt;br&gt;重建当前分支上下文" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="540" y="155" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="llm-generate" value="生成旁白、台词&lt;br&gt;和后续选项" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EF4444;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="780" y="155" width="130" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="back-save-node" value="审核通过后&lt;br&gt;保存剧情节点" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="540" y="265" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="db-node" value="写入文本节点" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFFFF;strokeColor=#8B5CF6;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="1210" y="265" width="110" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="front-show-text" value="T1：文本返回&lt;br&gt;页面先展示旁白、台词和选项" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#22C55E;strokeWidth=2;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="285" y="385" width="150" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="user-read" value="开始阅读当前剧情" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B8DEF;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="95" y="395" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="front-request-image" value="发起图片生成请求&lt;br&gt;显示加载状态" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#22C55E;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="285" y="510" width="150" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="back-read-prompt" value="读取节点提示词&lt;br&gt;组合角色卡和场景" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#F59E0B;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="540" y="510" width="140" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="img-generate" value="调用 Z-Image 工作流&lt;br&gt;生成绘本插图" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="1000" y="510" width="130" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="db-image" value="保存图片文件&lt;br&gt;更新图片路径" style="shape=folder;tabWidth=50;tabHeight=16;tabPosition=left;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#8B5CF6;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="1205" y="505" width="120" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="front-show-image" value="T2：图片返回&lt;br&gt;替换占位图并展示插图" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#5B8DEF;strokeWidth=2;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="285" y="655" width="150" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sync-note" value="文本主流程：先返回可阅读内容，减少用户等待感" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F59E0B;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="515" y="380" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="async-note" value="图像补充流程：图片生成完成后再更新页面" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#10B981;fontSize=13" vertex="1" parent="1">
+          <mxGeometry x="740" y="635" width="190" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a1" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151" edge="1" parent="1" source="t0" target="front-request-text"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a2" value="文本生成请求" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151;fontSize=12" edge="1" parent="1" source="front-request-text" target="back-context"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a3" value="上下文" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151;fontSize=12" edge="1" parent="1" source="back-context" target="llm-generate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a4" value="生成结果" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151;fontSize=12" edge="1" parent="1" source="llm-generate" target="back-save-node"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="845" y="250" /><mxPoint x="610" y="250" /></Array></mxGeometry></mxCell>
+        <mxCell id="a5" value="保存节点" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151;fontSize=12" edge="1" parent="1" source="back-save-node" target="db-node"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a6" value="返回文本" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151;fontSize=12" edge="1" parent="1" source="back-save-node" target="front-show-text"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="610" y="365" /><mxPoint x="360" y="365" /></Array></mxGeometry></mxCell>
+        <mxCell id="a7" style="endArrow=block;html=1;strokeWidth=2;strokeColor=#374151" edge="1" parent="1" source="front-show-text" target="user-read"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a12" value="文本返回后启动" style="endArrow=block;html=1;dashed=1;strokeWidth=2;strokeColor=#10B981;fontSize=12" edge="1" parent="1" source="front-show-text" target="front-request-image"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a8" value="异步请求" style="endArrow=block;html=1;dashed=1;strokeWidth=2;strokeColor=#10B981;fontSize=12" edge="1" parent="1" source="front-request-image" target="back-read-prompt"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a9" value="图像提示词" style="endArrow=block;html=1;dashed=1;strokeWidth=2;strokeColor=#10B981;fontSize=12" edge="1" parent="1" source="back-read-prompt" target="img-generate"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a10" value="保存图片" style="endArrow=block;html=1;dashed=1;strokeWidth=2;strokeColor=#10B981;fontSize=12" edge="1" parent="1" source="img-generate" target="db-image"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a11" value="图片路径" style="endArrow=block;html=1;dashed=1;strokeWidth=2;strokeColor=#10B981;fontSize=12" edge="1" parent="1" source="db-image" target="front-show-image"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1265" y="625" /><mxPoint x="360" y="625" /></Array></mxGeometry></mxCell>
+
+        <mxCell id="legend" value="说明：实线表示文本主流程，虚线表示图像补充流程。系统先返回可阅读文本，再生成并显示插图，从而降低用户感知等待时间。" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;fontSize=13;fontColor=#4B5563" vertex="1" parent="1">
+          <mxGeometry x="300" y="810" width="800" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

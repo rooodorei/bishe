@@ -8,10 +8,10 @@ import time
 # ==========================================
 client = OpenAI(
 
-    api_key="sk-s6RaienDyqDGWg3bxdCaOpImi4ztFhdN00GtiESZiawIxhAB", 
-    base_url="https://api.moonshot.cn/v1" 
+    api_key="sk-e1552fd527df459c935310a777908f1d", 
+    base_url="https://api.deepseek.com" 
 )
-TEST_MODEL = "kimi-k2.6" # 替换为你要测试的模型
+TEST_MODEL = "deepseek-v4-pro" # 替换为你要测试的模型
 
 # ==========================================
 # 2. 载入测试数据集 (Ground Truth Data)
@@ -271,7 +271,7 @@ def m4_evaluate(model_name, dataset):
             dist_response = client.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": dist_prompt}],
-
+temperature=0.0
             )
             # 先把 Kimi 真实返回的文本拿出来打印看看
             raw_dist_text = dist_response.choices[0].message.content.strip()
@@ -280,7 +280,6 @@ def m4_evaluate(model_name, dataset):
             print(f"  [Distance 报错]: {e}")
             pred_dist = -99 
             
-        time.sleep(3) # ⏳ 停顿 3 秒，防止被 API 频率风控
             
         # 2. 测性质 (Direction)
         dir_prompt = PROMPT_DIRECTION.format(q=item['Q'], a_o=item['A_o'], a_n=item['A_n'])
@@ -288,7 +287,7 @@ def m4_evaluate(model_name, dataset):
             dir_response = client.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": dir_prompt}],
-
+temperature=0.0
             )
             raw_dir_text = dir_response.choices[0].message.content.strip()
             pred_dir = int(raw_dir_text)
@@ -296,7 +295,6 @@ def m4_evaluate(model_name, dataset):
             print(f"  [Direction 报错]: {e}")
             pred_dir = -99 
 
-        time.sleep(3) # ⏳ 再次停顿 3 秒
 
         # 3. 对比并记录结果 (匹配 Ground Truth)
         is_dist_correct = (pred_dist == item['distance'])
