@@ -94,24 +94,13 @@ def chat_with_agent(system_prompt, user_message, json_mode=False):
 
 
 def generate_script_turn(child_features, context_history, user_choice, max_retries=3):
-    """生成一轮剧情、台词和选项。
-
-    Args:
-        child_features: 用户输入的主角特征，角色卡也会使用这份信息。
-        context_history: 当前分支的前情提要，由 `database.rebuild_llm_context()` 生成。
-        user_choice: 用户本轮点击的选项文本。
-        max_retries: 安全审核或 JSON 解析失败后的最大重试次数。
-
-    Returns:
-        dict | None: 成功时返回包含旁白、场景、动作、选项、台词的字典；失败返回 None。
-    """
-    # 导演提示词明确要求 story_scene/story_action 使用中文，避免旧版英文提示词风格影响 Z-Image。
-    # 注意：不要让 LLM 每页重复主角外貌和服装，因为角色一致性由 character_card.py 统一注入。
+   # 1. 导演提示词：加入 plot_reasoning 强制大模型进行一致性思考
     director_sys = """你是一个专业的中文儿童互动绘本导演，同时熟悉 Z-Image/中文文生图模型的提示词写法。
 请根据小朋友的选择构思下一幕，并严格输出一个标准 JSON 对象，不要输出 Markdown，不要添加解释。
 
 JSON 必须包含以下字段：
 {
+    "plot_reasoning": "（必填）在生成剧情前，简要分析前情提要和主角性格，说明为什么这段新剧情在逻辑上是连贯的（50字内）",
     "narrator_text": "150字左右的中文生动旁白，适合儿童阅读，温暖、有画面感、有互动感",
     "story_scene": "中文绘图场景提示词",
     "story_action": "中文绘图动作提示词",
@@ -119,32 +108,34 @@ JSON 必须包含以下字段：
 }
 
 绘图提示词要求：
-1. story_scene 和 story_action 必须使用中文，不要再写英文提示词。
-2. story_scene 描述环境、时间、氛围、光线、色彩、画面构图，例如：清晨的魔法森林小路，柔和阳光，发光小花，温暖明亮，儿童绘本插画。
-3. story_action 描述主角当前动作、姿态、表情和与环境的互动，例如：主角开心地向前走，一只手轻轻挥动，脸上带着好奇微笑。
-4. 不要在 story_scene 或 story_action 中重复主角外貌和服装；正式绘图流程会通过角色卡统一注入角色设定。
-5. 每一幕只能围绕一个主角展开，不要生成双主角、群像或复杂危险画面。
-6. 内容必须安全、温柔、童趣，避免暴力、血腥、恐怖、成人化、危险模仿。
+1. story_scene 和 story_action 必须使用中文。
+2. story_scene 描述环境、时间、氛围、光线等。
+3. story_action 描述主角当前动作、姿态、表情等。
+4. 不要在提示词中重复主角外貌和服装（由角色卡控制）。
+5. 每一幕只能围绕一个主角展开，剧情必须连贯。
+6. 内容必须安全、温柔、童趣。
 7. 如果收到审核打回意见，请针对性修改，并保持 JSON 格式正确。"""
 
-    # 演员只负责一句台词，避免导演 JSON 里混入额外文本导致解析失败。
+    # 2. 演员提示词：强调基于主角设定发声
     actor_sys = """你正在扮演儿童绘本主角。
-请结合当前的【场景环境】和【旁白内容】，说一句中文第一人称台词。
-要求：50字以内，童真、温暖、积极，像孩子会说的话；不要恐吓、攻击或成人化表达。"""
+请严格结合你的【主角特征】、【前情提要】以及当前的【场景环境】和【旁白内容】，说一句符合你人设的中文第一人称台词。
+要求：50字以内，童真、温暖、积极，语气必须符合你的性格特征；不要恐吓、攻击或成人化表达。"""
 
-    # 审核员只看旁白和台词，不审核图片提示词；图片提示词安全性主要由导演约束和角色卡约束保证。
-    critic_sys = """你是儿童内容安全专家。
-请审核旁白和台词是否适合儿童互动绘本。
-重点检查：暴力、血腥、恐怖惊吓、成人暗示、危险模仿、歧视、羞辱、过度阴暗情绪。
-如果安全，只回复 PASS。
-如果不安全，回复 REJECT，并用中文简要说明需要修改的问题。"""
+    # 3. 审核员提示词：增加对“剧情逻辑”和“人设”的审查
+    critic_sys = """你是儿童内容安全与剧情连贯性审核专家。
+请审核导演和演员生成的内容是否合格。
+重点检查：
+1. 内容安全性：有无暴力、血腥、恐怖惊吓、危险模仿等。
+2. 逻辑一致性：是否与【前情提要】存在严重脱节或逻辑矛盾？
+如果既安全又连贯，只回复 PASS。
+如果存在安全隐患或逻辑崩坏，回复 REJECT，并用中文简要说明需要修改的具体原因。"""
 
     critic_feedback = ""
 
     for attempt in range(max_retries):
         print(f"\n🎬 [LLM] 第 {attempt + 1} 次尝试生成剧情...")
 
-        # 导演输入包含三部分：角色基础特征、当前分支上下文、本轮用户选择。
+        # 导演输入保持不变
         director_user = f"【主角特征】：{child_features}\n【前情提要】：{context_history}\n【小朋友的选择】：{user_choice}"
         if critic_feedback:
             director_user += f"\n\n⚠️【上轮审核未通过，请修正】：{critic_feedback}"
@@ -154,24 +145,27 @@ JSON 必须包含以下字段：
         try:
             data = json.loads(director_response)
         except Exception:
-            # JSON 解析失败也走同一个重试通道，让导演下一轮修复格式。
             critic_feedback = "JSON格式错误，请确保返回标准的JSON对象。"
             continue
 
         narrator_text = data.get("narrator_text", "")
         story_scene = data.get("story_scene", "")
 
-        print("🗣️ 演员正在根据场景配音...")
-        actor_user = f"【当前场景】：{story_scene}\n【当前旁白】：{narrator_text}"
+        print("🗣️ 演员正在根据场景和人设配音...")
+        # 【关键修改】：将特征和前情传入给Actor
+        actor_user = f"【主角特征】：{child_features}\n【前情提要】：{context_history}\n【当前场景】：{story_scene}\n【当前旁白】：{narrator_text}"
         actor_dialogue = chat_with_agent(actor_sys, actor_user)
         data["actor_dialogue"] = actor_dialogue
 
-        print("🛡️ 评论家正在逐字审核...")
-        critic_user = f"【旁白】：{narrator_text}\n【台词】：{actor_dialogue}"
+        print("🛡️ 评论家正在逐字审核安全与一致性...")
+        # 【关键修改】：将特征和前情传入给Critic作为裁判依据
+        critic_user = f"【主角特征】：{child_features}\n【前情提要】：{context_history}\n【待审旁白】：{narrator_text}\n【待审台词】：{actor_dialogue}"
         critic_verdict = chat_with_agent(critic_sys, critic_user)
 
         if "PASS" in critic_verdict.upper():
-            print("✅ 剧本完美！通过安全审核。")
+            print("✅ 剧本完美！通过安全与连贯性审核。")
+            # 可以选择在存入数据库前删掉 plot_reasoning 减小体积
+            data.pop("plot_reasoning", None) 
             return data
 
         critic_feedback = critic_verdict

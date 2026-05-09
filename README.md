@@ -19,33 +19,30 @@ bishe/
 ├── frontend/
 │   └── index.html
 ├── src/
-│   ├── storybook.db              # 历史遗留数据库文件，当前配置不再使用
 │   └── storybook_app/
 │       ├── __init__.py
 │       ├── main.py               # FastAPI 入口
 │       ├── config.py             # 路径、LLM、ComfyUI 配置
 │       ├── database.py           # SQLite 数据访问层
-│       ├── llm_engine.py         # 剧情、台词、安全审核
+│       ├── llm_engine.py         # 剧情、台词、安全审核与运行时 LLM 设置
 │       ├── image_engine.py       # ComfyUI 绘图调度
-│       └── character_card.py     # 角色卡与提示词构建
+│       ├── character_card.py     # 角色卡与提示词构建
+│       └── test_image_engine.py  # 独立验证绘图链路的脚本
 ├── workflows/
 │   ├── zimage/                   # 当前正式使用：角色卡 + Z-Image 工作流
-│   │   ├── character_base.json   # 角色定妆照工作流
-│   │   ├── story_page.json       # 绘本页工作流
+│   │   ├── character_base.json   # 保留的角色定妆照实验工作流，正式接口未调用
+│   │   ├── story_page.json       # 正式绘本页工作流
 │   │   └── pose.json             # 预留/实验工作流，当前代码未调用
 │   └── legacy/                   # 旧版：IPAdapter + OpenPose/ControlNet 三阶段工作流
 │       ├── workflow_stage1_base.json
 │       ├── workflow_stage2_pose.json
 │       └── workflow_stage3_final.json
-├── tests/
-│   ├── test_image_engine.py      # 独立验证绘图链路的脚本
-│   └── test_character_card.py    # 角色卡函数重导出/测试辅助入口
+├── test.py                       # 根目录临时/辅助脚本
 ├── data/                         # 运行时自动创建，保存当前 SQLite 数据库
 └── outputs/                      # 运行时自动创建，保存生成结果
     ├── images/                   # 前端可访问的最终绘本页
     ├── character_cards/          # 每个 session 的角色卡 JSON
-    ├── temp/                     # 临时图片
-    └── test_assets/              # 测试脚本输出
+    └── temp/                     # 临时图片
 ```
 
 `data/`、`outputs/`、虚拟环境和缓存目录已加入 `.gitignore`。当前实际数据库路径由 `config.py` 统一指定为 `data/storybook.db`。
@@ -58,13 +55,12 @@ bishe/
 | `src/storybook_app/main.py` | FastAPI 入口。定义用户认证、故事管理、剧情生成、图片生成和时间线查询 API，协调 LLM、数据库、绘图流程，并挂载前端静态页面和 `/images` 图片目录。 |
 | `src/storybook_app/config.py` | 集中管理项目路径、运行产物目录、LLM 配置和 ComfyUI 地址；导入时自动创建 `data/` 与 `outputs/` 子目录。 |
 | `src/storybook_app/database.py` | SQLite 数据访问层。保存用户账号、绘本故事、剧情节点、父子分支、绘图提示词、图片 URL 和选项 JSON。 |
-| `src/storybook_app/llm_engine.py` | 调用 OpenAI 兼容接口。用 Director 生成剧情 JSON，用 Actor 生成主角台词，用 Critic 做儿童内容安全审核。 |
-| `src/storybook_app/character_card.py` | 当前正式角色一致性模块。把用户主角特征转为结构化角色卡，并构建角色定妆照/绘本页提示词。 |
-| `src/storybook_app/image_engine.py` | 当前正式绘图模块。加载 `workflows/zimage` 工作流，注入提示词和随机种子，提交 ComfyUI 并下载生成图片。 |
+| `src/storybook_app/llm_engine.py` | 调用 OpenAI 兼容接口。用 Director 生成剧情 JSON，用 Actor 生成主角台词，用 Critic 做儿童内容安全审核；同时提供运行时 LLM 配置读取与切换能力。 |
+| `src/storybook_app/character_card.py` | 当前正式角色一致性模块。把用户主角特征转为结构化角色卡，并构建绘本页提示词。 |
+| `src/storybook_app/image_engine.py` | 当前正式绘图模块。加载 `workflows/zimage/story_page.json`，注入提示词和随机种子，提交 ComfyUI 并下载生成图片。 |
 | `workflows/zimage/` | 当前正式绘图工作流目录，属于“角色卡 + 中文 Z-Image 提示词”路线。 |
 | `workflows/legacy/` | 旧版三阶段工作流目录，属于“IPAdapter + OpenPose/ControlNet”路线，当前代码不调用。 |
-| `tests/test_image_engine.py` | 不经过 FastAPI，直接测试角色卡、Z-Image 定妆照和绘本页生成链路。 |
-| `tests/test_character_card.py` | 从正式角色卡模块重新导出函数，避免测试代码维护重复实现。 |
+| `src/storybook_app/test_image_engine.py` | 不经过 FastAPI，直接测试角色卡和 Z-Image 绘本页生成链路。 |
 
 ## 4. 两套 ComfyUI 工作流说明
 
@@ -174,9 +170,11 @@ http://127.0.0.1:8000/
 | `BASE_IMAGE_OUTPUT_DIR` | 已移除 | 旧版角色定妆照目录配置，当前正式流程不再生成定妆照。 |
 | `CHARACTER_CARD_OUTPUT_DIR` | `outputs/character_cards/` | 角色卡 JSON 目录。 |
 | `TEMP_OUTPUT_DIR` | `outputs/temp/` | 临时图片目录。 |
-| `LLM_API_KEY` | 环境变量优先 | 大语言模型 API Key。 |
-| `LLM_BASE_URL` | 环境变量优先 | OpenAI 兼容 API 地址。 |
-| `LLM_MODEL_NAME` | 环境变量优先 | 大模型名称。 |
+| `LLM_API_KEY` | 环境变量优先 | 大语言模型 API Key；也可在前端设置页通过 `/api/settings/llm` 运行时临时切换。 |
+| `LLM_BASE_URL` | 环境变量优先 | OpenAI 兼容 API 地址；运行时设置服务重启后不保留。 |
+| `LLM_MODEL_NAME` | 环境变量优先 | 大模型名称；运行时设置服务重启后不保留。 |
+| `JWT_SECRET_KEY` | 环境变量优先 | JWT 签名密钥。生产或演示部署时建议设置为稳定且足够复杂的随机字符串。 |
+| `JWT_EXPIRE_SECONDS` | `604800` | JWT 有效期，默认 7 天。 |
 | `COMFYUI_SERVER_ADDRESS` | 环境变量优先 | ComfyUI HTTP 服务地址。 |
 | `COMFYUI_INPUT_DIR` | 环境变量优先 | ComfyUI 输入目录，当前正式 Z-Image 流程不依赖，主要兼容测试或旧逻辑。 |
 
@@ -188,7 +186,7 @@ http://127.0.0.1:8000/
 Authorization: Bearer <token>
 ```
 
-当前 token 保存在后端内存中，适合本地演示和毕业设计原型。服务重启后，用户需要重新登录。
+当前登录凭证是后端签发的轻量 JWT，包含签名和过期时间。默认有效期由 `JWT_EXPIRE_SECONDS` 控制，默认 7 天；服务重启不会主动清空已签发 token，但如果更换 `JWT_SECRET_KEY`，旧 token 会失效。
 
 ### 7.1 `POST /api/register`
 
@@ -258,7 +256,7 @@ Authorization: Bearer <token>
 
 ### 7.4 `POST /api/logout`
 
-退出登录，后端会移除当前 token。
+退出登录。当前后端使用有有效期的 JWT，服务端不保存 token 会话状态；该接口主要用于统一前端交互，实际退出由前端删除本地 token 完成。
 
 返回：
 
@@ -268,7 +266,38 @@ Authorization: Bearer <token>
 }
 ```
 
-### 7.5 `GET /api/storybooks`
+### 7.5 `GET /api/settings/llm`
+
+获取当前运行时使用的大语言模型配置。该接口需要登录。
+
+返回：
+
+```json
+{
+  "model_name": "deepseek-v4-flash",
+  "base_url": "https://api.deepseek.com",
+  "api_key_configured": true,
+  "api_key_masked": "sk-f****2fe"
+}
+```
+
+### 7.6 `POST /api/settings/llm`
+
+切换当前运行时的大语言模型配置。该接口需要登录，设置只保存在当前 Python 进程内，服务重启后会恢复为环境变量或 `config.py` 默认值。`api_key` 可留空，表示继续使用当前 Key。
+
+请求：
+
+```json
+{
+  "model_name": "deepseek-v4-pro",
+  "base_url": "https://api.deepseek.com",
+  "api_key": "新的 API Key，可选"
+}
+```
+
+返回字段同 `GET /api/settings/llm`。
+
+### 7.7 `GET /api/storybooks`
 
 获取当前用户的全部绘本故事。
 
@@ -292,7 +321,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 7.6 `DELETE /api/storybooks/{session_id}`
+### 7.8 `DELETE /api/storybooks/{session_id}`
 
 删除当前用户的一本绘本及其剧情节点。接口会校验故事归属，不能删除其他用户的故事。
 
@@ -304,7 +333,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 7.7 `POST /api/init_story_text`
+### 7.9 `POST /api/init_story_text`
 
 创建新绘本故事并生成根节点文本。该接口只生成文字，不生成图片；前端收到 `page_id` 后会再调用 `/api/render_image`。
 
@@ -341,7 +370,7 @@ init_story_text()
   -> add_page_node(parent_id=0, depth=0)
 ```
 
-### 7.8 `POST /api/next_turn_text`
+### 7.10 `POST /api/next_turn_text`
 
 根据当前节点和用户选择生成新的剧情分支节点。接口会校验 `session_id` 是否属于当前用户，并校验父节点是否属于该故事。
 
@@ -376,7 +405,7 @@ next_turn_text()
   -> add_page_node(parent_id=parent_page_id, depth=父节点深度+1)
 ```
 
-### 7.9 `POST /api/render_image`
+### 7.11 `POST /api/render_image`
 
 为指定剧情节点生成绘本图片，并把图片 URL 写回数据库。接口会通过节点所属故事校验当前用户权限。
 
@@ -408,7 +437,7 @@ render_image()
   -> update_page_image(page_id, image_url)
 ```
 
-### 7.10 `GET /api/get_timeline/{session_id}`
+### 7.12 `GET /api/get_timeline/{session_id}`
 
 获取当前用户某个绘本故事下的全部剧情节点，用于前端构建剧情树。
 
@@ -445,7 +474,7 @@ render_image()
 
 ```text
 用户注册/登录
-  -> 后端生成内存 token
+  -> 后端生成带签名和过期时间的 JWT
   -> 前端把 token 保存到 localStorage
   -> 后续业务请求携带 Authorization: Bearer <token>
 
@@ -464,7 +493,7 @@ render_image()
   -> 删除 storybooks 和对应 pages
 ```
 
-当前认证实现定位为本地演示版：token 存在后端内存中，服务重启后失效；密码以随机盐 + SHA-256 摘要保存到 SQLite。若用于真实公网部署，建议替换为 JWT、服务端会话存储或成熟认证方案。
+当前认证实现为轻量 JWT：后端使用 `JWT_SECRET_KEY` 对 token 进行 HMAC-SHA256 签名，payload 中包含用户 ID、签发时间和过期时间；密码以随机盐 + SHA-256 摘要保存到 SQLite。若用于真实公网部署，建议使用强随机 `JWT_SECRET_KEY`、HTTPS，并根据需要接入成熟认证、权限和审计方案。
 
 ### 8.1 文本生成流程
 
@@ -585,12 +614,13 @@ render_image(page_id)
 7. 图片展示：调用 `/api/render_image` 后显示 `/images/node_{page_id}.png`。
 8. 选项推进：支持点击 LLM 给出的两个选项，也支持输入自定义选择。
 9. 剧情树：读取当前故事的所有节点后在前端组装树形结构，点击历史节点可恢复该节点剧情、图片和选项，再从该节点继续分支。
+10. 前端模型设置：登录后可查看当前模型名、接口地址和 API Key 掩码，并通过 `/api/settings/llm` 临时切换后续剧情生成使用的模型配置；服务重启后恢复默认配置。
 
 ## 11. 测试与验证
 
 ### 11.1 角色卡函数
 
-`tests/test_character_card.py` 当前主要重新导出正式模块函数，避免维护重复实现。后续可以补充 pytest 测试，例如：
+角色卡相关函数位于 `src/storybook_app/character_card.py`。后续可以补充 pytest 测试，例如：
 
 - 输入“白色短发的小女孩”时是否识别出女孩和短发。
 - 保存角色卡后是否能通过 `load_character_card()` 恢复。
@@ -598,7 +628,7 @@ render_image(page_id)
 
 ### 11.2 绘图链路脚本
 
-`tests/test_image_engine.py` 是独立脚本，不经过 FastAPI。它会：
+`src/storybook_app/test_image_engine.py` 是独立脚本，不经过 FastAPI。它会：
 
 1. 使用固定主角特征生成角色卡。
 2. 使用固定测试剧情调用 `workflows/zimage/story_page.json` 生成测试绘本页。
@@ -607,7 +637,7 @@ render_image(page_id)
 运行示例：
 
 ```bash
-uv run python tests/test_image_engine.py
+uv run python src/storybook_app/test_image_engine.py
 ```
 
 运行前必须确保 ComfyUI 已启动，并且相关模型、节点和工作流依赖可用。
@@ -828,7 +858,7 @@ uv run uvicorn storybook_app.main:app --app-dir src --host 127.0.0.1 --port 8000
 
 ## 13. 注意事项
 
-1. 当前正式 FastAPI 绘图只调用 `workflows/zimage/character_base.json` 和 `workflows/zimage/story_page.json`。
+1. 当前正式 FastAPI 绘图只调用 `workflows/zimage/story_page.json`；`character_base.json` 和 `pose.json` 目前保留为实验/预留工作流。
 2. `workflows/legacy/` 是旧版 IPAdapter/OpenPose/ControlNet 路线，保留但不参与当前正式流程。
 3. `workflows/zimage/pose.json` 当前代码未调用，如果启用需要同步修改 `image_engine.py`。
 4. 当前 Z-Image 流程的角色一致性主要依赖角色卡提示词，不是 IPAdapter 图像参考。
