@@ -796,13 +796,15 @@
                             <h3 style="text-align: left; font-size: 18px; color: #555; margin-top: 0;">接下来做什么？</h3>
                             <div class="story-choice-grid">
                                 <button v-for="(opt, index) in currentStory.options" :key="index" class="btn-chunky secondary"
-                                    style="font-size: 16px; margin-top:0;" :disabled="isDrawing" @click="makeChoice(opt)">
+                                    style="font-size: 16px; margin-top:0;" :disabled="isDrawing || isSubmittingChoice" @click="makeChoice(opt)">
                                     👉 {{ opt }}
                                 </button>
                             </div>
                             <div class="custom-choice-row">
-                                <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想...">
-                                <button class="btn-chunky" :disabled="isDrawing || !customChoice" @click="makeChoice(customChoice)">出发</button>
+                                <input type="text" v-model="customChoice" placeholder="或者输入你的奇思妙想..." @keyup.enter="makeChoice(customChoice)">
+                                <button class="btn-chunky" :disabled="isDrawing || isSubmittingChoice || !customChoice.trim()" @click="makeChoice(customChoice)">
+                                    {{ isSubmittingChoice ? '生成中...' : '出发' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -882,6 +884,7 @@
                 });
                 const showApiKey = ref(false);
                 const isDrawing = ref(false);
+                const isSubmittingChoice = ref(false);
                 const isAvatarBuilderOpen = ref(false);
 
                 const sessionId = ref('');
@@ -1199,6 +1202,7 @@
                     currentStory.options = data.options;
 
                     customChoice.value = '';
+                    isSubmittingChoice.value = false;
                     currentScreen.value = 'story';
                     isDrawing.value = true;
                     fetchImage(data.page_id);
@@ -1232,18 +1236,27 @@
                 };
 
                 const makeChoice = async (choiceText) => {
+                    const normalizedChoice = String(choiceText || '').trim();
+                    if (isSubmittingChoice.value || isDrawing.value) return;
+                    if (!normalizedChoice) {
+                        alert('请输入有效内容');
+                        return;
+                    }
+
+                    isSubmittingChoice.value = true;
                     try {
                         loadingText.value = '正在编织未来的命运...';
                         currentScreen.value = 'loading';
                         const data = await callApi('/api/next_turn_text', {
                             session_id: sessionId.value,
                             parent_page_id: currentPageId.value,
-                            user_choice: choiceText
+                            user_choice: normalizedChoice
                         });
                         processStoryData(data);
                     } catch (e) {
                         alert("生成失败：" + e.message);
                         currentScreen.value = 'story';
+                        isSubmittingChoice.value = false;
                     }
                 };
 
@@ -1335,7 +1348,7 @@
                     currentScreen, loadingText, authMode, authForm, user, stories, llmSettings, showApiKey,
                     submitAuth, logout, goDashboard, showCreateStory, showAccount, showSettings, loadLLMSettings, saveLLMSettings,
                     openStory, deleteStory,
-                    isDrawing, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
+                    isDrawing, isSubmittingChoice, isAvatarBuilderOpen, setupData, avatarChoices, avatarOptionGroups,
                     generatedFeatureText, avatarMainSummary, avatarFaceIcon, applyAvatarFeatures, selectAvatarOption, customChoice,
                     currentStory, currentImage, timelineTree, currentPageId,
                     startGame, makeChoice, viewTimeline, jumpToNode, handleImageError

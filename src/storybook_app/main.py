@@ -296,7 +296,11 @@ async def next_turn_text(req: NextTurnRequest, current_user: Annotated[dict, Dep
     if not features:
         raise HTTPException(status_code=404, detail="找不到时间线")
 
-    turn_data = generate_script_turn(features, "\n".join(memory_list), req.user_choice)
+    choice_text = req.user_choice.strip()
+    if not choice_text:
+        raise HTTPException(status_code=400, detail="请输入有效内容")
+
+    turn_data = generate_script_turn(features, "\n".join(memory_list), choice_text)
     if not turn_data:
         raise HTTPException(status_code=500, detail="剧本生成失败")
 
@@ -305,7 +309,7 @@ async def next_turn_text(req: NextTurnRequest, current_user: Annotated[dict, Dep
         req.session_id,
         req.parent_page_id,
         depth,
-        req.user_choice,
+        choice_text,
         turn_data["narrator_text"],
         turn_data["actor_dialogue"],
         turn_data["story_action"],
