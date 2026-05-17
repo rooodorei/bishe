@@ -37,7 +37,10 @@ bishe/
 │       ├── workflow_stage1_base.json
 │       ├── workflow_stage2_pose.json
 │       └── workflow_stage3_final.json
+├── 参考论文/                     # 毕设相关论文资料
+├── 评估/                         # M1/M4 等实验评估脚本和图表
 ├── test.py                       # 根目录临时/辅助脚本
+├── thesis_m4_report.md           # M4 定性评估输出记录
 ├── data/                         # 运行时自动创建，保存当前 SQLite 数据库
 └── outputs/                      # 运行时自动创建，保存生成结果
     ├── images/                   # 前端可访问的最终绘本页
@@ -51,16 +54,16 @@ bishe/
 
 | 文件/目录 | 作用 |
 | --- | --- |
-| `frontend/index.html` | Vue 3 单页前端。包含注册登录、故事库、多故事管理、故事主题选择、主角捏人、剧情阅读、图片展示、自定义选择和剧情树回溯。 |
-| `src/storybook_app/main.py` | FastAPI 入口。定义用户认证、故事管理、剧情生成、图片生成和时间线查询 API，协调 LLM、数据库、绘图流程，并挂载前端静态页面和 `/images` 图片目录。 |
-| `src/storybook_app/config.py` | 集中管理项目路径、运行产物目录、LLM 配置和 ComfyUI 地址；导入时自动创建 `data/` 与 `outputs/` 子目录。 |
+| `frontend/index.html` | Vue 3 单页前端。包含注册登录、侧边栏导航、账户页、故事库、多故事管理、故事主题选择、主角捏人、剧情阅读、图片展示、自定义选择、剧情树回溯和运行时模型设置。 |
+| `src/storybook_app/main.py` | FastAPI 入口。定义用户认证、故事管理、剧情生成、图片生成、时间线查询和 LLM 设置 API，协调 LLM、数据库、绘图流程，并挂载前端静态页面和 `/images` 图片目录。 |
+| `src/storybook_app/config.py` | 集中管理项目路径、运行产物目录、LLM 配置、JWT 配置依赖的环境变量和 ComfyUI 地址；导入时自动创建 `data/` 与 `outputs/` 子目录。 |
 | `src/storybook_app/database.py` | SQLite 数据访问层。保存用户账号、绘本故事、剧情节点、父子分支、绘图提示词、图片 URL 和选项 JSON。 |
 | `src/storybook_app/llm_engine.py` | 调用 OpenAI 兼容接口。用 Director 生成剧情 JSON，用 Actor 生成主角台词，用 Critic 做儿童内容安全审核；同时提供运行时 LLM 配置读取与切换能力。 |
 | `src/storybook_app/character_card.py` | 当前正式角色一致性模块。把用户主角特征转为结构化角色卡，并构建绘本页提示词。 |
 | `src/storybook_app/image_engine.py` | 当前正式绘图模块。加载 `workflows/zimage/story_page.json`，注入提示词和随机种子，提交 ComfyUI 并下载生成图片。 |
 | `workflows/zimage/` | 当前正式绘图工作流目录，属于“角色卡 + 中文 Z-Image 提示词”路线。 |
 | `workflows/legacy/` | 旧版三阶段工作流目录，属于“IPAdapter + OpenPose/ControlNet”路线，当前代码不调用。 |
-| `src/storybook_app/test_image_engine.py` | 不经过 FastAPI，直接测试角色卡和 Z-Image 绘本页生成链路。 |
+| `src/storybook_app/test_image_engine.py` | 快速联调用的测试绘图模块。函数签名与正式绘图模块一致，但生成本地 PNG 占位图，不连接 ComfyUI。 |
 
 ## 4. 两套 ComfyUI 工作流说明
 
@@ -104,7 +107,7 @@ bishe/
 
 ### 5.1 安装依赖
 
-项目使用 `uv` 管理依赖，`pyproject.toml` 中声明了主要依赖：`fastapi`、`uvicorn`、`openai`、`pydantic`、`requests`。
+项目使用 `uv` 管理依赖，`pyproject.toml` 中声明了主要依赖：`fastapi`、`uvicorn`、`openai`、`pydantic`、`requests`，以及评估脚本使用的 `numpy`、`scipy`、`matplotlib`、`sentence-transformers`。
 
 ```bash
 uv sync
@@ -170,7 +173,7 @@ http://127.0.0.1:8000/
 | `BASE_IMAGE_OUTPUT_DIR` | 已移除 | 旧版角色定妆照目录配置，当前正式流程不再生成定妆照。 |
 | `CHARACTER_CARD_OUTPUT_DIR` | `outputs/character_cards/` | 角色卡 JSON 目录。 |
 | `TEMP_OUTPUT_DIR` | `outputs/temp/` | 临时图片目录。 |
-| `LLM_API_KEY` | 环境变量优先 | 大语言模型 API Key；也可在前端设置页通过 `/api/settings/llm` 运行时临时切换。 |
+| `LLM_API_KEY` | 环境变量优先 | 大语言模型 API Key；也可在前端设置页通过 `/api/settings/llm` 运行时临时切换。当前 `config.py` 中仍有本地开发默认值，公开交付前建议改为空值或全部改用环境变量。 |
 | `LLM_BASE_URL` | 环境变量优先 | OpenAI 兼容 API 地址；运行时设置服务重启后不保留。 |
 | `LLM_MODEL_NAME` | 环境变量优先 | 大模型名称；运行时设置服务重启后不保留。 |
 | `JWT_SECRET_KEY` | 环境变量优先 | JWT 签名密钥。生产或演示部署时建议设置为稳定且足够复杂的随机字符串。 |
@@ -474,8 +477,9 @@ render_image()
 
 ```text
 用户注册/登录
+  -> 后端用随机盐 + SHA-256 保存密码摘要
   -> 后端生成带签名和过期时间的 JWT
-  -> 前端把 token 保存到 localStorage
+  -> 前端把 token 保存到 localStorage.storybook_token
   -> 后续业务请求携带 Authorization: Bearer <token>
 
 用户进入故事库
@@ -511,7 +515,7 @@ render_image()
   -> database.add_page_node() 入库
 ```
 
-Director 必须返回标准 JSON，且 `story_scene` 和 `story_action` 必须使用中文，以适配当前 Z-Image 中文提示词路线。角色外貌和服装不由 LLM 在每页重复描述，而是由 `character_card.py` 统一注入。
+Director 必须返回标准 JSON，且 `story_scene` 和 `story_action` 必须使用中文，以适配当前 Z-Image 中文提示词路线。当前代码还要求 Director 返回一个内部字段 `plot_reasoning`，用于让模型在生成前简要检查前情和主角性格是否连贯；该字段通过审核后会在入库前删除，不返回前端。角色外貌和服装不由 LLM 在每页重复描述，而是由 `character_card.py` 统一注入。
 
 ### 8.2 图片生成流程
 
@@ -618,7 +622,28 @@ render_image(page_id)
 
 ## 11. 测试与验证
 
-### 11.1 角色卡函数
+### 11.1 快速前后端联调模式
+
+`src/storybook_app/test_image_engine.py` 是一个不调用 ComfyUI 的测试绘图模块，函数签名与正式 `image_engine.generate_full_story_page()` 保持一致。它会用标准库生成一张 PNG 占位图，并保存角色卡，适合在没有 GPU 或不想等待真实绘图时验证：
+
+- 注册、登录、JWT 鉴权是否正常。
+- 故事库创建、打开、删除是否正常。
+- 剧情文本生成和节点入库是否正常。
+- `/api/render_image`、图片 URL 写回和前端展示是否正常。
+
+如果要启用该测试绘图模块，可以把 `main.py` 中的导入临时改为：
+
+```python
+from .test_image_engine import generate_full_story_page
+```
+
+正式演示或真实出图时应使用默认的：
+
+```python
+from .image_engine import generate_full_story_page
+```
+
+### 11.2 角色卡函数
 
 角色卡相关函数位于 `src/storybook_app/character_card.py`。后续可以补充 pytest 测试，例如：
 
@@ -626,21 +651,19 @@ render_image(page_id)
 - 保存角色卡后是否能通过 `load_character_card()` 恢复。
 - `build_story_page_prompt()` 是否包含固定服装和固定主色。
 
-### 11.2 绘图链路脚本
+### 11.3 真实 ComfyUI 绘图链路验证
 
-`src/storybook_app/test_image_engine.py` 是独立脚本，不经过 FastAPI。它会：
+当前主应用默认使用 `src/storybook_app/image_engine.py`，它会连接 ComfyUI 并调用 `workflows/zimage/story_page.json` 生成真实绘本页。验证方式可以是：
 
-1. 使用固定主角特征生成角色卡。
-2. 使用固定测试剧情调用 `workflows/zimage/story_page.json` 生成测试绘本页。
-3. 输出到 `outputs/test_assets/`。
+1. 启动 ComfyUI，并确认工作流依赖的模型、节点和自定义插件可用。
+2. 启动本项目后端。
+3. 在前端创建故事并等待 `/api/render_image` 返回图片。
 
-运行示例：
+也可以另写脚本直接调用 `image_engine.generate_full_story_page()`，传入 `session_id`、`child_features`、`story_action` 和 `story_scene` 来做单独验证。真实绘图成功后，临时图片会先出现在 `outputs/temp/final_storybook_page.png`，随后在接口流程中移动到 `outputs/images/node_{page_id}.png`。
 
-```bash
-uv run python src/storybook_app/test_image_engine.py
-```
+## 11.4 评估脚本与实验记录
 
-运行前必须确保 ComfyUI 已启动，并且相关模型、节点和工作流依赖可用。
+仓库中的 `评估/` 目录保存了毕设实验阶段的评估脚本、绘图脚本和图表，例如 M1 批量评估、M4 自动绘图等；`thesis_m4_report.md` 保存了 M4 定性评估真实输出记录。这些内容用于论文实验分析，不属于 FastAPI 主应用的启动依赖。
 
 ## 12. 部署与打包
 
@@ -864,7 +887,8 @@ uv run uvicorn storybook_app.main:app --app-dir src --host 127.0.0.1 --port 8000
 4. 当前 Z-Image 流程的角色一致性主要依赖角色卡提示词，不是 IPAdapter 图像参考。
 5. LLM 输出的 `story_scene` 和 `story_action` 必须是中文，不要回退到旧版英文提示词风格。
 6. 当前正式流程不再生成 `outputs/base_images/base_{session_id}.png` 角色定妆照。
-7. 重复渲染同一节点会覆盖 `outputs/images/node_{page_id}.png`，数据库中的 `image_url` 保持不变。
-8. `outputs/temp/final_storybook_page.png` 是临时文件，生成成功后会被移动到最终图片目录。
-9. 生产或答辩演示环境建议使用环境变量设置 `LLM_API_KEY`，不要把真实密钥提交到仓库。
-10. 如果更换 ComfyUI 工作流节点编号，需要同步修改 `image_engine.py` 中注入提示词、设置种子和优先下载节点的逻辑。
+7. `src/storybook_app/test_image_engine.py` 当前是占位图联调模块，不会调用 ComfyUI；如果在 `main.py` 中临时切换到它，记得正式演示前改回 `image_engine.py`。
+8. 重复渲染同一节点会覆盖 `outputs/images/node_{page_id}.png`，数据库中的 `image_url` 保持不变。
+9. `outputs/temp/final_storybook_page.png` 是临时文件，生成成功后会被移动到最终图片目录。
+10. 生产或答辩演示环境建议使用环境变量设置 `LLM_API_KEY`，不要把真实密钥提交到仓库。
+11. 如果更换 ComfyUI 工作流节点编号，需要同步修改 `image_engine.py` 中注入提示词、设置种子和优先下载节点的逻辑。

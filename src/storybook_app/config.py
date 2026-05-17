@@ -59,7 +59,7 @@ for directory in (DATA_DIR, IMAGE_OUTPUT_DIR, CHARACTER_CARD_OUTPUT_DIR, TEMP_OU
 
 # ================= LLM 大模型配置 =================
 # 大模型 API Key。生产环境建议在系统环境变量中配置 LLM_API_KEY。
-LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-f05a2b91afc74603b56ce862208422fe")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-66b1b7075b204604a51a7c5b628c6a16")
 
 # OpenAI 兼容接口地址。DeepSeek、OpenAI 兼容网关都可以使用该字段。
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.deepseek.com")

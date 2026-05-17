@@ -43,8 +43,8 @@ from .database import (
     update_page_image,
     user_owns_storybook,
 )
-# from .image_engine import generate_full_story_page # 切回正式绘图引擎
-from .test_image_engine import generate_full_story_page
+from .image_engine import generate_full_story_page # 切回正式绘图引擎
+# from .test_image_engine import generate_full_story_page
 from .llm_engine import generate_script_turn, get_llm_settings, set_llm_settings
 
 
