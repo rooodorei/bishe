@@ -1189,7 +1189,6 @@
                 <div class="story-text-box">
                     <p><strong>用户名：</strong>{{ user.username }}</p>
                     <p><strong>用户 ID：</strong>{{ user.id }}</p>
-                    <p><strong>说明：</strong>当前账号下的绘本故事只会在自己的故事库中显示。</p>
                 </div>
                 <button class="btn-chunky secondary" @click="goDashboard">进入我的绘本</button>
             </div>
@@ -1211,7 +1210,7 @@
                         <button type="button" class="mini-btn" style="width:110px;" @click="showApiKey = !showApiKey">{{ showApiKey ? '隐藏' : '显示' }}</button>
                     </div>
                     <p style="font-size: 13px; color: #888; line-height: 1.7; margin-bottom:0;">
-                        当前 Key：{{ llmSettings.api_key_configured ? llmSettings.api_key_masked : '未配置' }}。出于安全考虑，后端不会把明文 API Key 回传到前端；如果不想更换 Key，这里留空即可。
+                        当前 Key：{{ llmSettings.api_key_configured ? llmSettings.api_key_masked : '未配置' }}。
                     </p>
                 </div>
                 <div class="feature-toolbar">
@@ -1219,7 +1218,6 @@
                     <button type="button" class="mini-btn" style="background:#fff;color:var(--secondary);border:2px solid var(--secondary);" @click="loadLLMSettings">重新读取</button>
                 </div>
                 <p style="font-size: 13px; color: #888; line-height: 1.7;">
-                    该设置会影响后续剧情生成。当前实现是运行时设置，服务重启后会恢复为环境变量或配置文件里的默认接口地址、模型和 API Key。
                 </p>
                 <div class="story-text-box">
                     <p style="margin-top:0;"><strong>填写示例：</strong></p>
@@ -1811,7 +1809,7 @@
 
                 const startGame = async () => {
                     try {
-                        loadingText.value = '正在推演世界的开端...';
+                        loadingText.value = '正在生成剧本...';
                         currentScreen.value = 'loading';
                         const data = await callApi('/api/init_story_text', {
                             title: setupData.title,

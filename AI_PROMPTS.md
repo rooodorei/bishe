@@ -45,6 +45,13 @@ JSON 必须包含以下字段：
     "options": ["中文下一步选项1", "中文下一步选项2"]
 }
 
+剧情连贯性要求：
+1. 必须优先承接【前情提要】中最近一幕的地点、正在发生的动作、主角目标和小朋友刚做出的选择。
+2. 不要突然更换地点、任务、道具或新增重要角色；如果必须转换场景，必须在旁白中写出自然过渡。
+3. 不要遗忘前情中已经建立的关键事实，例如主角已发现/获得/答应/正在寻找的事物。
+4. 新一幕应解决或推进当前选择带来的直接结果，而不是另起一个无关事件。
+5. options 必须基于当前旁白结尾自然延伸，不能跳到与当前场景无关的行动。
+
 绘图提示词要求：
 1. story_scene 和 story_action 必须使用中文。
 2. story_scene 描述环境、时间、氛围、光线等。
@@ -93,7 +100,7 @@ JSON 必须包含以下字段：
 为了控制上下文长度，当前代码最终只保留：
 
 - 全局设定。
-- 最近 3 条剧情记忆。
+- 最近 10 条剧情记忆。
 
 如果上一轮被 Critic 审核打回，Director 的用户消息末尾还会追加：
 
@@ -135,7 +142,7 @@ Actor 返回的内容会作为 `actor_dialogue` 显示在前端。
 
 ### 2.3 Critic：儿童内容审核 AI
 
-Critic 负责审核旁白和主角台词是否适合儿童绘本，并检查新剧情是否与前情提要存在严重脱节。
+Critic 负责审核旁白和主角台词是否适合儿童绘本，并检查新剧情是否与前情提要存在严重脱节、明显跳戏、无过渡换场景、突然换任务，或遗忘/推翻已建立的重要事实。
 
 #### 2.3.1 Critic 的系统提示词
 
@@ -145,8 +152,10 @@ Critic 负责审核旁白和主角台词是否适合儿童绘本，并检查新�
 重点检查：
 1. 内容安全性：有无暴力、血腥、恐怖惊吓、危险模仿等。
 2. 逻辑一致性：是否与【前情提要】存在严重脱节或逻辑矛盾？
+3. 承接性：是否自然延续最近一幕的地点、动作、目标和小朋友刚做出的选择？
+4. 事实保持：是否遗忘或推翻前情中已经建立的重要道具、任务、承诺或发现？
 如果既安全又连贯，只回复 PASS。
-如果存在安全隐患或逻辑崩坏，回复 REJECT，并用中文简要说明需要修改的具体原因。
+如果存在安全隐患、逻辑崩坏、明显跳戏、突然换任务或无过渡换场景，回复 REJECT，并用中文简要说明需要修改的具体原因。
 ```
 
 #### 2.3.2 Critic 的用户消息
@@ -164,15 +173,27 @@ Critic 负责审核旁白和主角台词是否适合儿童绘本，并检查新�
 
 ## 3. 绘图 AI 会收到哪些提示词
 
-绘图 AI 位于 `src/storybook_app/image_engine.py` 和 `src/storybook_app/character_card.py`。
+绘图相关代码位于 `src/storybook_app/image_engine.py`、`src/storybook_app/test_image_engine.py` 和 `src/storybook_app/character_card.py`。
 
-当前正式流程只会把正向提示词注入到：
+当前 `main.py` 为了快速前后端联调，实际导入的是 `test_image_engine.generate_full_story_page()`。因此当前运行模式不会连接 ComfyUI，也不会真的把提示词发送给绘图 AI；测试模块只会构建同样的角色卡正向提示词、打印 `[Test Stage 2 Prompt]`，并生成本地 PNG 占位图。
+
+如果把 `main.py` 中的导入切回：
+
+```python
+from .image_engine import generate_full_story_page
+```
+
+则真实 ComfyUI / Z-Image 流程会把正向提示词注入到：
 
 ```text
 workflows/zimage/story_page.json 的节点 4 的 inputs.text
 ```
 
 不会再调用 `character_base.json`，也不会生成角色定妆照。
+
+### 绘图相关提示
+
+以下 3.1～3.6 描述的是切回 `image_engine.py` 后的真实 ComfyUI / Z-Image 出图模式。当前 `test_image_engine.py` 联调模式会复用同样的 `build_story_page_prompt()` 构建逻辑，但只打印提示词并生成占位图。
 
 ### 3.1 绘图正向提示词的来源
 
@@ -272,7 +293,9 @@ positive, _negative = build_story_page_prompt(card, story_action, story_scene)
 
 ## 4. 哪些内容不会传给绘图 AI
 
-当前绘图 AI 不会收到：
+当前快速联调模式下，系统不会连接真实绘图 AI；`test_image_engine.py` 只会打印构建出的正向提示词并生成本地占位图。
+
+切回真实 ComfyUI / Z-Image 模式后，绘图 AI 不会收到：
 
 - 角色定妆照提示词。
 - `workflows/zimage/character_base.json`。
@@ -296,7 +319,7 @@ story_scene
 Director 收到：
 
 ```text
-系统规则：儿童绘本导演，输出 JSON，生成旁白、场景、动作、两个选项，内容安全，绘图提示词中文。
+系统规则：儿童绘本导演，输出 JSON，生成旁白、场景、动作、两个选项，内容安全，绘图提示词中文；优先承接最近一幕的地点、动作、目标和小朋友选择，避免无过渡换场景、突然换任务或遗忘关键事实。
 用户内容：主角特征 + 前情提要 + 小朋友选择。
 ```
 
@@ -310,13 +333,15 @@ Actor 收到：
 Critic 收到：
 
 ```text
-系统规则：儿童内容安全与剧情连贯性审核，只返回 PASS 或 REJECT 原因。
+系统规则：儿童内容安全与剧情连贯性审核，只返回 PASS 或 REJECT 原因；重点检查安全性、逻辑一致性、承接性和事实保持。
 用户内容：主角特征 + 前情提要 + 待审旁白 + 待审台词。
 ```
 
 ### 绘图 AI 收到
 
-绘图 AI 只收到 `story_page.json` 节点 4 的正向提示词：
+当前 `main.py` 使用快速联调模式，不连接真实绘图 AI；`test_image_engine.py` 只打印由角色卡、动作和场景构建出的正向提示词，并生成本地占位图。
+
+切回 `image_engine.py` 后，绘图 AI 只收到 `story_page.json` 节点 4 的正向提示词：
 
 ```text
 儿童绘本页面插画 + 一个主角约束 + 前端角色卡完整内容 + Director 生成的动作 + Director 生成的场景 + 简短一致性约束

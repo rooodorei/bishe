@@ -310,7 +310,7 @@ def rebuild_llm_context(page_id):
 
     为了控制提示词长度，最终只保留：
     - 全局设定。
-    - 最近 3 条剧情记忆。
+    - 最近 10 条剧情记忆。
     """
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
@@ -344,7 +344,7 @@ def rebuild_llm_context(page_id):
         else:
             memory_list.append(f"小朋友选择【{page['user_choice']}】，剧情：{page['narrator_text']}")
 
-    if len(memory_list) > 4:
-        memory_list = [memory_list[0]] + memory_list[-3:]
+    if len(memory_list) > 11:
+        memory_list = [memory_list[0]] + memory_list[-10:]
 
     return book["features"], memory_list, [dict(page) for page in path]

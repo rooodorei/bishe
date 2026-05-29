@@ -6,7 +6,7 @@
 
 创建故事时，用户在前端选择故事主题并通过“捏主角”组件生成主角特征。后端会调用大语言模型生成剧情旁白、主角台词、中文绘图场景提示词、中文绘图动作提示词和两个下一步选项。用户每次点击选项或输入自定义选择，都会生成一个新的剧情节点，多个分支最终组成可回溯的“剧情树”。
 
-图片生成部分接入 ComfyUI。当前正式代码使用基于角色卡的 Z-Image 工作流：后端会把前端主角特征整理成稳定角色卡，并在每个绘本页提示词中注入同一份角色设定，以降低角色漂移。仓库中同时保留了一套旧版基于 IPAdapter、OpenPose/ControlNet 的 legacy 工作流，用于对照或回退，但正式 FastAPI 接口不会调用它。
+图片生成部分接入 ComfyUI。项目保留了基于角色卡的 Z-Image 正式绘图模块：后端可把前端主角特征整理成稳定角色卡，并在每个绘本页提示词中注入同一份角色设定，以降低角色漂移。当前 `main.py` 为了快速联调，实际导入的是 `test_image_engine.py`，会生成本地 PNG 占位图而不连接 ComfyUI；切回真实出图时，把导入改回 `image_engine.py` 即可。仓库中同时保留了一套旧版基于 IPAdapter、OpenPose/ControlNet 的 legacy 工作流，用于对照或回退。
 
 ## 2. 目录结构
 
@@ -55,15 +55,15 @@ bishe/
 | 文件/目录 | 作用 |
 | --- | --- |
 | `frontend/index.html` | Vue 3 单页前端。包含注册登录、侧边栏导航、账户页、故事库、多故事管理、故事主题选择、主角捏人、剧情阅读、图片展示、自定义选择、剧情树回溯和运行时模型设置。 |
-| `src/storybook_app/main.py` | FastAPI 入口。定义用户认证、故事管理、剧情生成、图片生成、时间线查询和 LLM 设置 API，协调 LLM、数据库、绘图流程，并挂载前端静态页面和 `/images` 图片目录。 |
+| `src/storybook_app/main.py` | FastAPI 入口。定义用户认证、故事管理、剧情生成、图片生成、时间线查询和 LLM 设置 API，协调 LLM、数据库、绘图流程，并挂载前端静态页面和 `/images` 图片目录。当前为快速联调导入 `test_image_engine.generate_full_story_page`，切回真实绘图时需改回 `image_engine.generate_full_story_page`。 |
 | `src/storybook_app/config.py` | 集中管理项目路径、运行产物目录、LLM 配置、JWT 配置依赖的环境变量和 ComfyUI 地址；导入时自动创建 `data/` 与 `outputs/` 子目录。 |
 | `src/storybook_app/database.py` | SQLite 数据访问层。保存用户账号、绘本故事、剧情节点、父子分支、绘图提示词、图片 URL 和选项 JSON。 |
 | `src/storybook_app/llm_engine.py` | 调用 OpenAI 兼容接口。用 Director 生成剧情 JSON，用 Actor 生成主角台词，用 Critic 做儿童内容安全审核；同时提供运行时 LLM 配置读取与切换能力。 |
 | `src/storybook_app/character_card.py` | 当前正式角色一致性模块。把用户主角特征转为结构化角色卡，并构建绘本页提示词。 |
-| `src/storybook_app/image_engine.py` | 当前正式绘图模块。加载 `workflows/zimage/story_page.json`，注入提示词和随机种子，提交 ComfyUI 并下载生成图片。 |
+| `src/storybook_app/image_engine.py` | 真实 ComfyUI 绘图模块。加载 `workflows/zimage/story_page.json`，注入提示词和随机种子，提交 ComfyUI 并下载生成图片；当前 `main.py` 中暂未直接导入，真实出图时切回。 |
 | `workflows/zimage/` | 当前正式绘图工作流目录，属于“角色卡 + 中文 Z-Image 提示词”路线。 |
 | `workflows/legacy/` | 旧版三阶段工作流目录，属于“IPAdapter + OpenPose/ControlNet”路线，当前代码不调用。 |
-| `src/storybook_app/test_image_engine.py` | 快速联调用的测试绘图模块。函数签名与正式绘图模块一致，但生成本地 PNG 占位图，不连接 ComfyUI。 |
+| `src/storybook_app/test_image_engine.py` | 当前 `main.py` 实际导入的快速联调绘图模块。函数签名与真实绘图模块一致，但生成本地 PNG 占位图，不连接 ComfyUI。 |
 
 ## 4. 两套 ComfyUI 工作流说明
 
@@ -76,10 +76,10 @@ bishe/
 | 文件 | 当前状态 | 说明 |
 | --- | --- | --- |
 | `character_base.json` | 当前代码未调用 | 保留的实验/对照工作流，可用于单独生成角色设定图，但正式 FastAPI 绘图流程不再调用它。 |
-| `story_page.json` | 正式调用 | 使用 Z-Image 模型生成最终绘本页。`image_engine.py` 会把节点 `4` 的正向提示词替换为角色卡 + 当前页动作/场景组合后的中文提示词，并设置节点 `7`、`9` 的随机种子，优先下载保存节点 `14` 的图片。 |
+| `story_page.json` | 真实出图时调用 | 使用 Z-Image 模型生成最终绘本页。切回 `image_engine.py` 后会把节点 `4` 的正向提示词替换为角色卡 + 当前页动作/场景组合后的中文提示词，并设置节点 `7`、`9` 的随机种子，优先下载保存节点 `14` 的图片。当前快速联调模式下，`main.py` 导入 `test_image_engine.py`，不会连接 ComfyUI，也不会实际读取该工作流。 |
 | `pose.json` | 当前代码未调用 | 保留的实验/预留工作流。正式 `generate_full_story_page()` 只加载 `story_page.json`。 |
 
-这一套工作流不依赖 IPAdapter 图像输入来保持角色，而是通过以下机制控制一致性：
+这一套工作流不依赖 IPAdapter 图像输入来保持角色，而是通过以下机制控制一致性。当前快速联调模式使用 `test_image_engine.py` 生成占位图；切回 `image_engine.py` 后，真实 ComfyUI 出图会按这一路线执行：
 
 ```text
 用户输入主角特征
@@ -501,7 +501,7 @@ render_image()
 
 ### 8.1 文本生成流程
 
-`llm_engine.py` 把一轮剧情生成拆成三个模型角色：
+`llm_engine.py` 把一轮剧情生成拆成三个模型角色，`database.rebuild_llm_context(page_id)` 会沿当前剧情分支回溯并提供“全局设定 + 最近 10 条剧情记忆”作为前情提要：
 
 ```text
 用户输入 child_features / theme / user_choice
@@ -515,7 +515,9 @@ render_image()
   -> database.add_page_node() 入库
 ```
 
-Director 必须返回标准 JSON，且 `story_scene` 和 `story_action` 必须使用中文，以适配当前 Z-Image 中文提示词路线。当前代码还要求 Director 返回一个内部字段 `plot_reasoning`，用于让模型在生成前简要检查前情和主角性格是否连贯；该字段通过审核后会在入库前删除，不返回前端。角色外貌和服装不由 LLM 在每页重复描述，而是由 `character_card.py` 统一注入。
+Director 必须返回标准 JSON，且 `story_scene` 和 `story_action` 必须使用中文，以适配当前 Z-Image 中文提示词路线。当前代码还要求 Director 返回一个内部字段 `plot_reasoning`，用于让模型在生成前简要检查前情和主角性格是否连贯；该字段通过审核后会在入库前删除，不返回前端。Director 的内部提示词会要求优先承接最近一幕的地点、动作、主角目标和小朋友选择，避免突然更换地点、任务、道具或新增重要角色；如果必须转场，需要在旁白中写出自然过渡。角色外貌和服装不由 LLM 在每页重复描述，而是由 `character_card.py` 统一注入。
+
+Critic 会同时检查儿童内容安全、逻辑一致性、承接性和事实保持：如果新剧情明显跳戏、突然换任务、无过渡换场景，或遗忘/推翻前情中已经建立的重要道具、任务、承诺或发现，会返回 `REJECT`，后端再把原因反馈给 Director 重写，最多重试 3 次。
 
 ### 8.2 图片生成流程
 
@@ -523,14 +525,16 @@ Director 必须返回标准 JSON，且 `story_scene` 和 `story_action` 必须�
 render_image(page_id)
   -> 读取页面 action_prompt / scene_prompt
   -> 读取绘本 features
-  -> image_engine.generate_full_story_page()
+  -> 当前 main.py 调用 test_image_engine.generate_full_story_page()
       -> build_character_card(features)
       -> 保存角色卡 JSON
       -> build_story_page_prompt(card, story_action, story_scene)
-      -> 使用 workflows/zimage/story_page.json 生成 outputs/temp/final_storybook_page.png
+      -> 生成 outputs/temp/final_storybook_page.png 占位图
   -> main.py 移动图片到 outputs/images/node_{page_id}.png
   -> 数据库写入 /images/node_{page_id}.png
 ```
+
+如果把 `main.py` 的导入切回 `from .image_engine import generate_full_story_page`，上述流程中的占位图生成会替换为真实 ComfyUI 调用：加载 `workflows/zimage/story_page.json`，注入正向提示词和随机种子，下载 ComfyUI 输出图片。
 
 ### 8.3 角色一致性流程
 
@@ -560,7 +564,7 @@ render_image(page_id)
   -> 点击任意节点时恢复该节点旁白、台词、选项和图片
 ```
 
-后端 `rebuild_llm_context(page_id)` 只沿当前分支回溯，不会把整棵树都塞给大模型。为了控制上下文长度，它最终保留全局设定和最近 3 条剧情记忆。
+后端 `rebuild_llm_context(page_id)` 只沿当前分支回溯，不会把整棵树都塞给大模型。为了控制上下文长度，它最终保留全局设定和最近 10 条剧情记忆。
 
 ## 9. 数据库设计
 
